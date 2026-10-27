@@ -3,7 +3,7 @@ name: Build & Test vDef + Darcy Flow
 on:
   push:
     branches: [main, master]
-  workflow_dispatch:              # 手动触发
+  workflow_dispatch:
 
 jobs:
   compile:
@@ -22,7 +22,6 @@ jobs:
         working-directory: mef90-master
         env:
           MEF90_DIR: /__w/mef90-master/mef90-master
-          # PETSc 路径 — Bourdin 镜像预置好的
           PETSC_DIR: /opt/HPC/petsc-3.3-mef90
           PETSC_ARCH: Linux-gcc9-mpich32-O
         run: |
