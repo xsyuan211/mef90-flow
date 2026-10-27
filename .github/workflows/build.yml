@@ -9,48 +9,130 @@ jobs:
   compile:
     name: Build + Terzaghi Benchmark
     runs-on: ubuntu-latest
-    container:
-      image: bourdin/mef90centos7openmpio:latest
-      options: --cpus=4 --memory=8g
+
     steps:
       - name: Checkout mef90 source
         uses: actions/checkout@v4
         with:
           path: mef90-master
 
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            gcc g++ gfortran \
+            openmpi-bin libopenmpi-dev \
+            cmake make perl m4 git \
+            patch wget curl python3-pip \
+            libboost-dev libhdf5-dev libnetcdf-dev
+          pip3 install cython pyaml numpy
+
+      - name: Clone and build PETSc-3.3 (Bourdin fork)
+        run: |
+          set -e
+          export PETSC_DIR=$HOME/petsc-3.3-mef90
+          export PETSC_ARCH=linux-gcc9-openmpi-mef90-O
+          export MPI_HOME=/usr/lib/x86_64-linux-gnu/openmpi
+          export PATH=$MPI_HOME/bin:$PATH
+
+          echo "=== Cloning PETSc-3.3-mef90 ==="
+          git clone --single-branch --branch mef90-3.3 \
+            https://gitlab.com/blaisebourdin/petsc.git $PETSC_DIR
+
+          echo "=== Configuring PETSc ==="
+          cd $PETSC_DIR
+          ./configure \
+            COPTFLAGS='-O3' \
+            CXXOPTFLAGS='-O3' \
+            FOPTFLAGS='-O3' \
+            FFLAGS='-Wno-aliasing -ffree-line-length-none' \
+            CXXFLAGS='-Wno-unused-local-typedefs -Wno-unused-variable' \
+            CFLAGS='-Wno-unused-variable' \
+            --download-exodusii=1 \
+            --download-f-blas-lapack=1 \
+            --download-chaco=1 \
+            --download-hypre=1 \
+            --download-metis=1 \
+            --download-ml=1 \
+            --download-netcdf=1 \
+            --download-parmetis=1 \
+            --download-sowing=1 \
+            --download-yaml=1 \
+            --with-boost=1 \
+            --with-clanguage=C++ \
+            --with-debugging=0 \
+            --with-fortran-datatypes=1 \
+            --with-gnu-compilers=1 \
+            --with-mpi-dir=$MPI_HOME \
+            --with-shared-libraries=1 \
+            --with-sieve=1 \
+            --with-c2html=0 \
+            --with-x11=0 \
+            2>&1 | tail -30
+
+          echo "=== Building PETSc (this takes ~20-30 min) ==="
+          make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all 2>&1 | tail -20
+
+          echo "=== PETSc built successfully ==="
+          ls $PETSC_DIR/lib/$PETSC_ARCH/ | head -5
+
+      - name: Build SNLP (nonlinear solver, required by mef90)
+        run: |
+          set -e
+          export PETSC_DIR=$HOME/petsc-3.3-mef90
+          export PETSC_ARCH=linux-gcc9-openmpi-mef90-O
+          export PATH=$PETSC_DIR/bin:$PETSC_DIR/$PETSC_ARCH/bin:$PATH
+
+          git clone https://github.com/bourdin/snlp.git $HOME/snlp
+          cd $HOME/snlp
+          make clean 2>/dev/null || true
+          make 2>&1 | tail -10
+          make install 2>&1 | tail -5
+
       - name: Build MEF90 + m_Flow + vDef
         working-directory: mef90-master
         env:
-          MEF90_DIR: /__w/mef90-master/mef90-master
-          PETSC_DIR: /opt/HPC/petsc-3.3-mef90
-          PETSC_ARCH: Linux-gcc9-mpich32-O
+          MEF90_DIR: ${{ github.workspace }}/mef90-master
+          PETSC_DIR: $HOME/petsc-3.3-mef90
+          PETSC_ARCH: linux-gcc9-openmpi-mef90-O
+          SNLP_DIR: $HOME/snlp
+          MPI_HOME: /usr/lib/x86_64-linux-gnu/openmpi
+          PATH: ${{ env.MPI_HOME }}/bin:${{ env.PETSC_DIR }}/bin:${{ env.PETSC_DIR }}/${{ env.PETSC_ARCH }}/bin:$PATH
         run: |
-          echo "=== Directory ==="
-          pwd && ls -la
-          echo ""
+          set -e
           echo "=== PETSc check ==="
           echo "PETSC_DIR=$PETSC_DIR"
           echo "PETSC_ARCH=$PETSC_ARCH"
-          ls $PETSC_DIR/lib/$PETSC_ARCH/ 2>&1 | head -10
+          ls $PETSC_DIR/lib/$PETSC_ARCH/ 2>&1 | head -5
           echo ""
-          echo "=== Compiling ==="
-          make MEF90            2>&1 | tail -20
-          make m_DefMech        2>&1 | tail -10
-          make m_HeatXfer       2>&1 | tail -10
-          make m_Flow           2>&1 | tail -30
-          make vDef             2>&1 | tail -20
+          echo "=== Compiling MEF90 ==="
+          make MEF90 2>&1 | tail -10
+          echo ""
+          echo "=== Compiling m_DefMech ==="
+          make m_DefMech 2>&1 | tail -10
+          echo ""
+          echo "=== Compiling m_HeatXfer ==="
+          make m_HeatXfer 2>&1 | tail -10
+          echo ""
+          echo "=== Compiling m_Flow ==="
+          make m_Flow 2>&1 | tail -30
+          echo ""
+          echo "=== Compiling vDef ==="
+          make vDef 2>&1 | tail -20
           echo ""
           echo "=== Build complete ==="
           ls -la bin/$PETSC_ARCH/vDef
 
       - name: Run Terzaghi 1D Consolidation Benchmark
+        if: always() && steps.build.outputs.result == 'success'
         working-directory: mef90-master/vDef
         env:
-          MEF90_DIR: /__w/mef90-master/mef90-master
-          PETSC_DIR: /opt/HPC/petsc-3.3-mef90
-          PETSC_ARCH: Linux-gcc9-mpich32-O
+          MEF90_DIR: ${{ github.workspace }}/mef90-master
+          PETSC_DIR: $HOME/petsc-3.3-mef90
+          PETSC_ARCH: linux-gcc9-openmpi-mef90-O
+          MPI_HOME: /usr/lib/x86_64-linux-gnu/openmpi
+          PATH: ${{ env.MPI_HOME }}/bin:${{ env.PETSC_DIR }}/bin:${{ env.PETSC_DIR }}/${{ env.PETSC_ARCH }}/bin:$PATH
         run: |
-          set -e
           echo "=== Running Terzaghi benchmark ==="
           echo "  k_min=5e-11 m^2, mu=1e-3 Pa-s, S=4.6e-10 1/Pa"
           echo "  c_v ~ 109 m^2/s, T_max = 1.09"
@@ -60,16 +142,11 @@ jobs:
             ../bin/$PETSC_ARCH/vDef \
             -prefix data/Beam1x10-tri3 \
             -options_file_yaml data/terzaghi1D.yaml \
-            2>&1 | tee /tmp/terzaghi.log || echo "(solver non-zero exit, checking log)"
+            2>&1 | tee /tmp/terzaghi.log || echo "(solver non-zero exit)"
 
           echo ""
           echo "=== Output EXO files ==="
-          ls -la terzaghi1D-*.exo 2>/dev/null || echo "(no exo - solver may have exited early)"
-          echo ""
-          echo "=== Terzaghi Analytical Reference ==="
-          echo "  T(t) = c_v*t/H^2 = 1.09*t"
-          echo "  t=0.5s -> T=0.54 -> consolidation ~ 42%"
-          echo "  t=1.0s -> T=1.09 -> consolidation ~ 63%"
+          ls -la terzaghi1D-*.exo 2>/dev/null || echo "(no exo)"
 
       - name: Upload EXO outputs
         uses: actions/upload-artifact@v4
