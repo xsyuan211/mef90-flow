@@ -1,0 +1,14 @@
+{
+  "name": "vDef + m_Flow (Darcy + Biot)",
+  "image": "bourdin/mef90centos7openmpio:latest",
+  "forwardPorts": [],
+  "postCreateCommand": "echo 'MEF90 devcontainer ready'; echo PETSC_DIR=$PETSC_DIR; echo PETSC_ARCH=$PETSC_ARCH; which gfortran mpif90 make",
+  "containerEnv": {
+    "MEF90_DIR": "/workspace/mef90-master",
+    "PETSC_DIR": "/opt/HPC/petsc-3.3-mef90",
+    "PETSC_ARCH": "Linux-gcc9-mpich32-O"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  }
+}

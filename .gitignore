@@ -1,0 +1,10 @@
+*~
+*o
+*mod
+*pyc
+*log
+*.ener*
+*_out.gen
+_minted*
+mef90version.h
+.vscode

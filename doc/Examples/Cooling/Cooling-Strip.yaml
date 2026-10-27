@@ -1,0 +1,75 @@
+### global options
+verbose: 1
+boundaryDisplacement:
+  scaling: linear
+boundaryTemp:
+  scaling: constant
+stress:
+    offset: 6
+defmech:
+    irrevthres: 0.
+    timestepping:
+        type: quasistatic
+heatxfer:
+    timestepping:
+        type: transient
+    initialTemp: 0
+temp:
+  ts_monitor:
+time:
+    min: 0
+    max: .1
+    numstep: 101
+    interpolation: quadratic
+cs0001:
+    hookeslaw: 
+        type: isotropic
+        YoungsModulus: 1
+        PoissonRatio: .22
+        PlaneStress: 1
+    FractureToughness: 1
+    internallength: .0625
+    residualstiffness: 0.
+    LinearThermalExpansion: 8.6,8.6,0
+    ThermalConductivity: 1,1,0
+    damage:
+        type: AT1
+    plasticity:
+        type: NONE
+    displacementbc: no,no,no
+    damageBC: no
+cs0010:
+    damage:
+        type: AT1
+    plasticity:
+        type: NONE
+    displacementbc: yes,yes,no
+    boundaryDisplacement: 0,0,0
+    damageBC: no
+    tempBC: no
+cs0020:
+    damage:
+        type: AT1
+    plasticity:
+        type: NONE
+    displacementbc: yes,no,no
+    boundaryDisplacement: 0,0,0
+    damageBC: no
+    tempBC: no
+cs0030:
+    damage:
+        type: AT1
+    plasticity:
+        type: NONE
+    displacementbc: no,no,no
+    damageBC: no
+    tempBC: yes
+    boundaryTemp: -1
+cs0040:
+    damage:
+        type: AT1
+    plasticity:
+        type: NONE
+    displacementbc: yes,no,no
+    damageBC: no
+    tempBC: no

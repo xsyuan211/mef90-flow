@@ -1,0 +1,73 @@
+#
+# PhaseFieldFlow parameters (.prm)
+# deal.II ParameterHandler 格式，对应 vDef YAML 的语义迁移
+#
+# 物理单位: SI (Pa, m, s)
+# 验证案例: Terzaghi 1D Consolidation + 相场断裂
+#
+
+set Mesh type              = hyper_rectangle
+set Domain dimensions      = 3
+set nx                     = 20
+set ny                     = 1
+set nz                     = 10
+set refinement levels      = 0
+
+subsection Geometry
+  set x_min = 0.0
+  set y_min = 0.0
+  set z_min = 0.0
+  set x_max = 10.0
+  set y_max = 1.0
+  set z_max = 10.0
+end
+
+subsection Elasticity
+  set E  = 1.0e9       # 杨氏模量 [Pa] (1 GPa — 页岩)
+  set nu = 0.25        # 泊松比
+end
+
+subsection Fracture
+  set GC           = 270.0     # 能量释放率 Gc [N/m] (页岩典型值)
+  set length_scale = 0.15     # 相场长度尺度 l [m] — 决定裂纹带宽度
+end
+
+subsection Darcy
+  set k_min      = 5.0e-11    # 最小渗透率 [m²] (完全破坏)
+  set k_max      = 1.0e-14    # 最大渗透率 [m²] (完整基质)
+  set viscosity  = 1.0e-3     # 水粘度 [Pa·s]
+  set storativity = 4.6e-10   # 储水系数 [Pa⁻¹]
+  set source_term = 0.0       # 体积源项 [1/s]
+end
+
+subsection Biot
+  set biot_coeff = 1.0        # Biot-Willis 系数 α (0=关闭, 1=典型)
+end
+
+subsection BoundaryConditions
+  # Top (z=10): 自由排水 p=0
+  set top_drained_pressure    = 0.0
+  # Bottom (z=0): 固定 u+w, 不排水 (impermeable, ∂p/∂n=0)
+  set bottom_fixed_dof        = true
+  # Side (x=0, x=10): 辊子 (u_x=0, u_z 自由)
+  set roller_boundaries       = true
+end
+
+subsection TimeStepping
+  set num_load_steps   = 20
+  set load_increment   = 0.5        # [m] 顶部位移增量 (Terzaghi 1D 是瞬态 → 这里暂设为准静态)
+  set max_altmin_iters = 30
+  set altmin_tol       = 1.0e-6
+end
+
+subsection SolverControl
+  set linear_tol       = 1.0e-8
+  set non_linear_tol   = 1.0e-6
+  set max_newton_iters = 20
+end
+
+subsection Output
+  set output_frequency = 5           # 每 N 步输出 VTK
+  set refine_frequency = 10          # 每 N 步做 AMR
+  set n_global_refinement_steps = 0
+end
