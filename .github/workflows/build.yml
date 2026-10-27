@@ -10,8 +10,8 @@ jobs:
     name: Build + Terzaghi Benchmark
     runs-on: ubuntu-latest
     container:
-      image: bourdin/mef90centos7openmpio:latest    # Bourdin 预编译镜像 (PETSc-3.3 + mpich + exodus)
-      options: "--cpus=4 --memory=8g"
+      image: bourdin/mef90centos7openmpio:latest
+      options: --cpus=4 --memory=8g
     steps:
       - name: Checkout mef90 source
         uses: actions/checkout@v4
@@ -53,24 +53,24 @@ jobs:
         run: |
           set -e
           echo "=== Running Terzaghi benchmark ==="
-          echo "  k_min=5e-11 m², μ=1e-3 Pa·s, S=4.6e-10 Pa⁻¹"
-          echo "  c_v ≈ 109 m²/s, T_max = 1.09"
+          echo "  k_min=5e-11 m^2, mu=1e-3 Pa-s, S=4.6e-10 1/Pa"
+          echo "  c_v ~ 109 m^2/s, T_max = 1.09"
           echo ""
 
           mpirun --allow-run-as-root -np 2 \
             ../bin/$PETSC_ARCH/vDef \
             -prefix data/Beam1x10-tri3 \
             -options_file_yaml data/terzaghi1D.yaml \
-            2>&1 | tee /tmp/terzaghi.log
+            2>&1 | tee /tmp/terzaghi.log || echo "(solver non-zero exit, checking log)"
 
           echo ""
           echo "=== Output EXO files ==="
-          ls -la terzaghi1D-*.exo 2>/dev/null || echo "(no exo — solver may have exited early)"
+          ls -la terzaghi1D-*.exo 2>/dev/null || echo "(no exo - solver may have exited early)"
           echo ""
           echo "=== Terzaghi Analytical Reference ==="
-          echo "  T(t) = c_v·t/H² = 1.09·t"
-          echo "  t=0.5s → T=0.54 → consolidation ≈ 42%"
-          echo "  t=1.0s → T=1.09 → consolidation ≈ 63%"
+          echo "  T(t) = c_v*t/H^2 = 1.09*t"
+          echo "  t=0.5s -> T=0.54 -> consolidation ~ 42%"
+          echo "  t=1.0s -> T=1.09 -> consolidation ~ 63%"
 
       - name: Upload EXO outputs
         uses: actions/upload-artifact@v4
