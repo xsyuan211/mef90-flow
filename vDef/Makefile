@@ -14,14 +14,16 @@ test3D: ${MEF90_DIR}/bin/${PETSC_ARCH}/vDef
 	done
 	#make -s testvDef PREFIX=Beam1x10-tetra10 OPTIONSFILE=$${OPTIONSFILE};\
 
-include ${PETSC_DIR}/conf/rules
 include ${PETSC_DIR}/conf/variables
+include ${PETSC_DIR}/conf/rules
 
 include ${MEF90_DIR}/Makefile.include
 include ${MEF90_DIR}/MEF90/Makefile.include
 include ${MEF90_DIR}/m_HeatXfer/Makefile.include
 include ${MEF90_DIR}/m_DefMech/Makefile.include
 include ${MEF90_DIR}/m_Flow/Makefile.include
+# Also include m_Flow/Makefile for compile rules (not just OBJS paths)
+include ${MEF90_DIR}/m_Flow/Makefile
 BASE_DIR=${MEF90_DIR}/vDef
 
 m_vDefDefault.o: ${BASE_DIR}/m_vDefDefault.F90 ${MEF90_DEFMECH_OBJS} ${MEF90_HEATXFER_OBJS} ${MEF90_FLOW_OBJS}
