@@ -114,12 +114,20 @@ jobs:
           bash /tmp/miniconda.sh -b -p $HOME/miniconda2
           $HOME/miniconda2/bin/conda create -n py27 python=2.7 -y -q
           export PY27=$HOME/miniconda2/envs/py27/bin/python
+          echo "PY27=$PY27"
+          ls -la $PY27
           $PY27 --version
+          # CRITICAL: Make sure python2.7 is BEFORE python3 in PATH!
+          ln -sf $PY27 /usr/local/bin/python2.7
+          ln -sf $PY27 /usr/local/bin/python2
+          export PATH=$HOME/miniconda2/envs/py27/bin:$PATH
+          which python
+          python --version
           echo "=== Clone PETSc mef90-3.3 ==="
           git clone --single-branch --branch mef90-3.3 https://gitlab.com/blaisebourdin/petsc.git $PETSC_DIR
           cd $PETSC_DIR
           echo "=== Configure ==="
-          $PY27 ./configure \
+          python2.7 ./configure \
             COPTFLAGS='-O3' CXXOPTFLAGS='-O3' FOPTFLAGS='-O3' \
             FFLAGS='-Wno-aliasing -ffree-line-length-none' \
             --download-hdf5=$HOME/petsc-dl/hdf5-1.10.6.tar.gz \
@@ -132,9 +140,12 @@ jobs:
             --with-mpi-dir=$MPI_HOME --with-sieve=1 \
             --with-fortran-datatypes=1 --with-debugging=0 \
             --with-clanguage=C++ --with-shared-libraries=1 \
-            --with-c2html=0 --with-x11=0 --with-gnu-compilers=1 2>&1 | tail -20
-          echo "=== Check petscrules exists ==="
-          ls $PETSC_ARCH/conf/petscrules
+            --with-c2html=0 --with-x11=0 --with-gnu-compilers=1 2>&1 | tee /tmp/petsc-configure.log | tail -30
+          echo "=== Configure exit code: $? ==="
+          echo "=== Check petscrules ==="
+          ls -la $PETSC_ARCH/conf/petscrules 2>/dev/null || echo "FAILURE: petscrules NOT created!"
+          echo "=== If failed, show last 30 of configure log ==="
+          if [ ! -f "$PETSC_ARCH/conf/petscrules" ]; then tail -30 /tmp/petsc-configure.log; exit 1; fi
           echo "=== Make PETSc ==="
           make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all 2>&1 | tail -10
 
