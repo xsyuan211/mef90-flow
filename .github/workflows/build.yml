@@ -16,63 +16,19 @@ jobs:
       - name: Install deps
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq gcc g++ gfortran openmpi-bin libopenmpi-dev cmake make perl m4 git patch wget curl dos2unix libtool automake python3
+          sudo apt-get install -y -qq \
+            gcc g++ gfortran openmpi-bin libopenmpi-dev \
+            cmake make perl m4 git patch wget curl dos2unix \
+            libtool automake
 
-      - name: PATCH ALL SOURCES
+      - name: Fix CRLF + permissions
         run: |
-          set +e
-          echo "===== CRLF ====="
-          find . -type f $ -name "*.sh" -o -name "Makefile" -o -name "*.F90" -o -name "*.inc" -o -name "*.h" -o -name "*.yaml" -o -name "*.yml" $ -exec dos2unix -q {} \;
+          find . -type f -name "*.sh" -exec dos2unix -q {} \;
+          find . -type f -name "Makefile" -exec dos2unix -q {} \;
+          find . -type f -name "*.F90" -exec dos2unix -q {} \;
+          find . -type f -name "*.inc" -exec dos2unix -q {} \;
+          find . -type f -name "*.h" -exec dos2unix -q {} \;
           chmod +x bin/makeversion.sh
-
-          echo "===== REMOVE petscbagdef.h from FlowCtx ====="
-          sed -i '/petscbagdef.h/d' m_Flow/m_MEF90_FlowCtx.F90
-          echo "After sed:"
-          head -8 m_Flow/m_MEF90_FlowCtx.F90
-
-          echo "===== Swap include order ====="
-          for f in m_Flow/Makefile vDef/Makefile; do
-            echo "--- $f before ---"
-            grep -n 'conf/' $f | head -3
-            python3 -c "
-import sys
-p='$f'
-with open(p) as fh: c=fh.read()
-old='include \${PETSC_DIR}/conf/rules\ninclude \${PETSC_DIR}/conf/variables'
-new='include \${PETSC_DIR}/conf/variables\ninclude \${PETSC_DIR}/conf/rules'
-if old in c:
-    c=c.replace(old,new)
-    with open(p,'w') as fh: fh.write(c)
-    print('SWAPPED')
-else:
-    print('NOT FOUND')
-"
-            echo "--- $f after ---"
-            grep -n 'conf/' $f | head -3
-          done
-
-          echo "===== vDef: add m_Flow/Makefile ====="
-          grep -q 'm_Flow/Makefile' vDef/Makefile || python3 -c "
-p='vDef/Makefile'
-with open(p) as fh: c=fh.read()
-c=c.replace('include \${MEF90_DIR}/m_DefMech/Makefile.include','include \${MEF90_DIR}/m_DefMech/Makefile.include\ninclude \${MEF90_DIR}/m_Flow/Makefile')
-with open(p,'w') as fh: fh.write(c)
-print('ADDED')
-"
-          echo "--- vDef Makefile includes ---"
-          grep -n 'Makefile' vDef/Makefile | head -8
-
-          echo "===== m_Flow: clear MEF90_DIM ====="
-          python3 -c "
-import re
-p='m_Flow/Makefile'
-with open(p) as fh: c=fh.read()
-c=re.sub(r'make -C \$\{MEF90_DIR\} MEF90 ','make -C \${MEF90_DIR} MEF90 MEF90_DIM= ',c)
-with open(p,'w') as fh: fh.write(c)
-print('DONE')
-"
-          echo "--- m_Flow make MEF90 lines ---"
-          grep -n 'make.*MEF90' m_Flow/Makefile
 
       - name: Build OpenMPI 3.1.3
         run: |
@@ -104,25 +60,36 @@ print('DONE')
           export PETSC_ARCH=linux-gcc-openmpi-mef90-O
           export MPI_HOME=$HOME/openmpi-3.1.3
           export PATH=$MPI_HOME/bin:$PATH
-          echo "=== Miniconda2 + py27 ==="
+          echo "=== Python 2.7 ==="
           wget -q https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh -O /tmp/miniconda.sh
           bash /tmp/miniconda.sh -b -p $HOME/miniconda2
           $HOME/miniconda2/bin/conda create -n py27 python=2.7 -y -q
-          export PATH=$HOME/miniconda2/envs/py27/bin:$PATH
-          which python
-          python --version
-          echo "=== Clone PETSc ==="
+          export PY27=$HOME/miniconda2/envs/py27/bin/python
+          $PY27 --version
+          echo "=== Clone PETSc mef90-3.3 ==="
           git clone --single-branch --branch mef90-3.3 https://gitlab.com/blaisebourdin/petsc.git $PETSC_DIR
           cd $PETSC_DIR
           echo "=== Configure ==="
-          python ./configure COPTFLAGS='-O3' CXXOPTFLAGS='-O3' FOPTFLAGS='-O3' FFLAGS='-Wno-aliasing -ffree-line-length-none' --download-hdf5=$HOME/petsc-dl/hdf5-1.10.6.tar.gz --download-netcdf=$HOME/petsc-dl/netcdf-v4.8.1.tar.gz --download-exodusii=$HOME/petsc-dl/exodusii-2021-01-20.tar.gz --download-f-blas-lapack=1 --download-chaco=1 --download-hypre=1 --download-metis=1 --download-ml=1 --download-parmetis=1 --download-sowing=1 --download-yaml=1 --download-boost=1 --with-mpi-dir=$MPI_HOME --with-sieve=1 --with-fortran-datatypes=1 --with-debugging=0 --with-clanguage=C++ --with-shared-libraries=1 --with-c2html=0 --with-x11=0 --with-gnu-compilers=1 2>&1 | tee /tmp/petsc-configure.log | tail -30
-          echo "=== Verify petscrules ==="
-          test -f $PETSC_ARCH/conf/petscrules
-          ls -la $PETSC_ARCH/conf/petscrules
+          $PY27 ./configure \
+            COPTFLAGS='-O3' CXXOPTFLAGS='-O3' FOPTFLAGS='-O3' \
+            FFLAGS='-Wno-aliasing -ffree-line-length-none' \
+            --download-hdf5=$HOME/petsc-dl/hdf5-1.10.6.tar.gz \
+            --download-netcdf=$HOME/petsc-dl/netcdf-v4.8.1.tar.gz \
+            --download-exodusii=$HOME/petsc-dl/exodusii-2021-01-20.tar.gz \
+            --download-f-blas-lapack=1 \
+            --download-chaco=1 --download-hypre=1 --download-metis=1 \
+            --download-ml=1 --download-parmetis=1 --download-sowing=1 \
+            --download-yaml=1 --download-boost=1 \
+            --with-mpi-dir=$MPI_HOME --with-sieve=1 \
+            --with-fortran-datatypes=1 --with-debugging=0 \
+            --with-clanguage=C++ --with-shared-libraries=1 \
+            --with-c2html=0 --with-x11=0 --with-gnu-compilers=1 2>&1 | tail -20
+          echo "=== Check config result ==="
+          ls $PETSC_ARCH/conf/petscrules 2>&1 || echo "!! NO petscrules !!"
           echo "=== Make PETSc ==="
           make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all 2>&1 | tail -10
 
-      - name: Build ALL
+      - name: Build MEF90 + m_Flow + vDef
         run: |
           set -e
           export PETSC_DIR=$HOME/petsc-3.3-mef90
@@ -130,20 +97,24 @@ print('DONE')
           export MPI_HOME=$HOME/openmpi-3.1.3
           export PATH=$MPI_HOME/bin:$PETSC_DIR/bin:$PETSC_DIR/$PETSC_ARCH/bin:$PATH
           export MEF90_DIR=$(pwd)
-          echo "ENV: MEF90_DIR=$MEF90_DIR PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH"
-          echo "--- MEF90 ---"
-          make MEF90
-          echo "--- DefMech ---"
-          make m_DefMech
-          echo "--- HeatXfer ---"
-          make m_HeatXfer
-          echo "--- m_Flow ---"
-          make m_Flow 2>&1 | tee /tmp/m_flow.log
-          echo "--- vDef ---"
-          make vDef
-          echo "--- BIN ---"
+          echo "=== ENV ==="
+          echo "MEF90_DIR=$MEF90_DIR"
+          echo "PETSC_DIR=$PETSC_DIR"
+          echo "PETSC_ARCH=$PETSC_ARCH"
+          ls $PETSC_DIR/conf/variables
+          ls bin/makeversion.sh
+          echo "=== MEF90 ==="
+          make MEF90 2>&1 | tail -5
+          echo "=== m_DefMech ==="
+          make m_DefMech 2>&1 | tail -5
+          echo "=== m_HeatXfer ==="
+          make m_HeatXfer 2>&1 | tail -5
+          echo "=== m_Flow ==="
+          make m_Flow 2>&1 | tail -60
+          echo "=== vDef ==="
+          make vDef 2>&1 | tail -20
+          echo "=== BUILD SUCCESS! ==="
           ls -la bin/$PETSC_ARCH/vDef
-          echo "=== BUILD SUCCESS ==="
 
       - name: Run Terzaghi
         if: always()
@@ -155,17 +126,18 @@ print('DONE')
           export PATH=$MPI_HOME/bin:$PETSC_DIR/bin:$PETSC_DIR/$PETSC_ARCH/bin:$PATH
           export MEF90_DIR=$(pwd)
           cd vDef
-          mpirun --allow-run-as-root -np 2 ../bin/$PETSC_ARCH/vDef -prefix data/Beam1x10-tri3 -options_file_yaml data/terzaghi1D.yaml 2>&1 | tee /tmp/terzaghi.log
+          mpirun --allow-run-as-root -np 2 ../bin/$PETSC_ARCH/vDef \
+            -prefix data/Beam1x10-tri3 \
+            -options_file_yaml data/terzaghi1D.yaml 2>&1 | tee /tmp/terzaghi.log
           ls -la terzaghi1D-*.exo 2>/dev/null || echo "(no exo)"
         continue-on-error: true
 
-      - name: Upload logs
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: build-logs
+          name: build-outputs
           path: |
-            /tmp/petsc-configure.log
-            /tmp/m_flow.log
+            vDef/terzaghi1D-*.exo
             /tmp/terzaghi.log
           retention-days: 7
