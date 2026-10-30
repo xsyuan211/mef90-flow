@@ -14,11 +14,11 @@ m_MEF90_Flow.o: ${BASE_DIR}/m_MEF90_Flow.F90 m_MEF90_FlowAssembly2D.o m_MEF90_Fl
 	@echo "      $<"
 	-@${FC} ${FC_FLAGS} ${FCPPFLAGS} -I${MEF90_INCLUDE} -c -o $@ $<
 
-m_MEF90_FlowAssembly2D.o: ${BASE_DIR}/m_MEF90_FlowAssembly.F90 m_MEF90_FlowCtx.o m_DefMech.o
+m_MEF90_FlowAssembly2D.o: ${BASE_DIR}/m_MEF90_FlowAssembly.F90 m_MEF90_FlowCtx.o ${MEF90_DIR}/objs/${PETSC_ARCH}/m_MEF90_DefMechCtx.o
 	@echo "      $< MEF90_DIM=2"
 	-@${FC} ${FC_FLAGS} ${FCPPFLAGS} -I${MEF90_INCLUDE} -DMEF90_DIM=2 -c -o $@ $<
 
-m_MEF90_FlowAssembly3D.o: ${BASE_DIR}/m_MEF90_FlowAssembly.F90 m_MEF90_FlowCtx.o m_DefMech.o
+m_MEF90_FlowAssembly3D.o: ${BASE_DIR}/m_MEF90_FlowAssembly.F90 m_MEF90_FlowCtx.o ${MEF90_DIR}/objs/${PETSC_ARCH}/m_MEF90_DefMechCtx.o
 	@echo "      $< MEF90_DIM=3"
 	-@${FC} ${FC_FLAGS} ${FCPPFLAGS} -I${MEF90_INCLUDE} -DMEF90_DIM=3 -c -o $@ $<
 
