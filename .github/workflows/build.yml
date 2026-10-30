@@ -21,14 +21,38 @@ jobs:
             cmake make perl m4 git patch wget curl dos2unix \
             libtool automake
 
-      - name: Fix CRLF + permissions
+      - name: Fix CRLF + permissions + PATCH SOURCE
         run: |
+          echo "=== Convert to LF ==="
           find . -type f -name "*.sh" -exec dos2unix -q {} \;
           find . -type f -name "Makefile" -exec dos2unix -q {} \;
           find . -type f -name "*.F90" -exec dos2unix -q {} \;
           find . -type f -name "*.inc" -exec dos2unix -q {} \;
           find . -type f -name "*.h" -exec dos2unix -q {} \;
           chmod +x bin/makeversion.sh
+          echo ""
+          echo "=== PATCH 1: Add petscbagdef.h include to m_MEF90_FlowCtx (main module) ==="
+          if ! grep -q 'finclude/petscbagdef.h' m_Flow/m_MEF90_FlowCtx.F90; then
+            echo "Injecting petscbagdef.h..."
+            sed -i '3a#include "finclude/petscbagdef.h"' m_Flow/m_MEF90_FlowCtx.F90
+          else
+            echo "Already has petscbagdef.h"
+          fi
+          head -8 m_Flow/m_MEF90_FlowCtx.F90
+          echo ""
+          echo "=== PATCH 2: Fix m_Flow/Makefile include order ==="
+          sed -i 's|include \${PETSC_DIR}/conf/rules\ninclude \${PETSC_DIR}/conf/variables|include ${PETSC_DIR}/conf/variables\ninclude ${PETSC_DIR}/conf/rules|g' m_Flow/Makefile
+          grep "conf/" m_Flow/Makefile | head -3
+          echo ""
+          echo "=== PATCH 3: Fix vDef/Makefile include order + add m_Flow/Makefile ==="
+          sed -i 's|include \${PETSC_DIR}/conf/rules\ninclude \${PETSC_DIR}/conf/variables|include ${PETSC_DIR}/conf/variables\ninclude ${PETSC_DIR}/conf/rules|g' vDef/Makefile
+          if ! grep -q 'm_Flow/Makefile' vDef/Makefile; then
+            sed -i '/include \${MEF90_DIR}\/m_DefMech\/Makefile.include/a include ${MEF90_DIR}/m_Flow/Makefile' vDef/Makefile
+          fi
+          echo ""
+          echo "=== PATCH 4: Fix m_Flow/Makefile DefMechCtx.o dependency ==="
+          sed -i 's|m_DefMech.o|m_MEF90_DefMechCtx.o|g' m_Flow/Makefile
+          grep "DefMech" m_Flow/Makefile
 
       - name: Build OpenMPI 3.1.3
         run: |
@@ -110,7 +134,7 @@ jobs:
           echo "=== m_HeatXfer ==="
           make m_HeatXfer 2>&1 | tail -5
           echo "=== m_Flow ==="
-          make m_Flow 2>&1 | tail -60
+          make m_Flow 2>&1 | tail -80
           echo "=== vDef ==="
           make vDef 2>&1 | tail -20
           echo "=== BUILD SUCCESS! ==="
