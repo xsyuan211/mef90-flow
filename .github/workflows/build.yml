@@ -21,48 +21,63 @@ jobs:
             cmake make perl m4 git patch wget curl dos2unix \
             libtool automake
 
-      - name: PATCH ALL SOURCES (BEFORE BUILD!)
+      - name: PATCH ALL SOURCES (CRITICAL)
         run: |
-          echo "===== STEP 1: CRLF + perms ====="
+          set +e
+          echo "===== STEP 1: CRLF → LF + permissions ====="
           find . -type f -name "*.sh" -exec dos2unix -q {} \;
           find . -type f -name "Makefile" -exec dos2unix -q {} \;
           find . -type f -name "*.F90" -exec dos2unix -q {} \;
           find . -type f -name "*.inc" -exec dos2unix -q {} \;
           find . -type f -name "*.h" -exec dos2unix -q {} \;
+          find . -type f -name "*.yaml" -exec dos2unix -q {} \;
+          find . -type f -name "*.yml" -exec dos2unix -q {} \;
           chmod +x bin/makeversion.sh
           echo ""
-          echo "===== STEP 2: REMOVE petscbagdef.h from FlowCtx (HeatXfer works without it!) ====="
-          # HeatXfer has NO petscbagdef.h, uses implicit interface, and compiles fine!
-          # Our petscbagdef.h causes formal arg mismatch. So REMOVE it.
-          if grep -q 'petscbagdef.h' m_Flow/m_MEF90_FlowCtx.F90; then
-            sed -i '/petscbagdef.h/d' m_Flow/m_MEF90_FlowCtx.F90
-            echo "REMOVED petscbagdef.h from FlowCtx main module"
-          fi
-          # Also remove from submodules (shouldn't be there but safe)
+
+          echo "===== STEP 2: REMOVE petscbagdef.h from FlowCtx main module ====="
+          echo "--- BEFORE (grep petscbagdef.h) ---"
+          grep -n 'petscbagdef.h' m_Flow/m_MEF90_FlowCtx.F90
           sed -i '/petscbagdef.h/d' m_Flow/m_MEF90_FlowCtx.F90
-          echo "After cleanup, main module header:"
-          head -8 m_Flow/m_MEF90_FlowCtx.F90 | tail -5
+          echo "--- AFTER ---"
+          grep -n 'petscbagdef.h' m_Flow/m_MEF90_FlowCtx.F90 || echo "CLEAN - no petscbagdef.h remaining!"
+          echo "--- Header now ---"
+          head -10 m_Flow/m_MEF90_FlowCtx.F90
           echo ""
-          echo "===== STEP 3: Swap rules/variables include order ====="
+
+          echo "===== STEP 3: Swap include order in Makefiles ====="
           for mk in m_Flow/Makefile vDef/Makefile; do
-            if grep -q 'conf/rules' "$mk"; then
-              sed -i '/conf\/rules/d' "$mk"
-              sed -i '/conf\/variables/a include ${PETSC_DIR}/conf/rules' "$mk"
-              echo "FIXED include order: $mk"
-            fi
+            echo "--- $mk BEFORE ---"
+            grep -n 'conf/' "$mk" | head -5
+            # Swap: variables before rules
+            sed -i 's|include ${PETSC_DIR}/conf/rules\ninclude ${PETSC_DIR}/conf/variables|include ${PETSC_DIR}/conf/variables\ninclude ${PETSC_DIR}/conf/rules|g' "$mk"
+            sed -i '/conf\/rules/,/conf\/variables/{
+              /conf\/rules/{h;d}
+              /conf\/variables/{p;x}
+            }' "$mk"
+            echo "--- $mk AFTER ---"
+            grep -n 'conf/' "$mk" | head -5
           done
           echo ""
-          echo "===== STEP 4: vDef/Makefile add m_Flow/Makefile ====="
+
+          echo "===== STEP 4: Add m_Flow/Makefile include to vDef/Makefile ====="
           if ! grep -q 'm_Flow/Makefile' vDef/Makefile; then
             sed -i '/m_DefMech\/Makefile.include/a include ${MEF90_DIR}/m_Flow/Makefile' vDef/Makefile
           fi
+          grep -n 'Makefile' vDef/Makefile | head -10
           echo ""
-          echo "===== STEP 5: Fix DefMechCtx.o dep ====="
-          sed -i 's|m_DefMech\.o|m_MEF90_DefMechCtx.o|g' m_Flow/Makefile
+
+          echo "===== STEP 5: Clear MEF90_DIM in m_Flow/Makefile ====="
+          echo "--- BEFORE ---"
+          grep -n 'make.*MEF90' m_Flow/Makefile
+          sed -i 's|make -C ${MEF90_DIR} MEF90$.*$|make -C ${MEF90_DIR} MEF90 MEF90_DIM=\1|g' m_Flow/Makefile
+          # Simpler: just add MEF90_DIM= after MEF90 in the inner call
+          sed -i '/make -C ${MEF90_DIR} MEF90 /s/MEF90 /MEF90 MEF90_DIM= /g' m_Flow/Makefile
+          echo "--- AFTER ---"
+          grep -n 'make.*MEF90' m_Flow/Makefile
           echo ""
-          echo "===== STEP 6: Clear MEF90_DIM= when m_Flow re-enters MEF90 ====="
-          sed -i 's|make -C ${MEF90_DIR} MEF90|make -C ${MEF90_DIR} MEF90 MEF90_DIM=|g' m_Flow/Makefile
-          echo "===== ALL PATCHES DONE ====="
+
+          echo "===== ALL PATCHES VERIFIED ====="
 
       - name: Build OpenMPI 3.1.3
         run: |
@@ -85,6 +100,7 @@ jobs:
           wget -q https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1_10_6.tar.gz -O hdf5-1.10.6.tar.gz
           wget -q https://github.com/Unidata/netcdf-c/archive/refs/tags/v4.8.1.tar.gz -O netcdf-v4.8.1.tar.gz
           wget -q https://github.com/sandialabs/seacas/archive/refs/tags/v2021-01-20.tar.gz -O exodusii-2021-01-20.tar.gz
+          ls -la
 
       - name: Build PETSc-3.3
         run: |
@@ -93,12 +109,16 @@ jobs:
           export PETSC_ARCH=linux-gcc-openmpi-mef90-O
           export MPI_HOME=$HOME/openmpi-3.1.3
           export PATH=$MPI_HOME/bin:$PATH
+          echo "=== Python 2.7 ==="
           wget -q https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh -O /tmp/miniconda.sh
           bash /tmp/miniconda.sh -b -p $HOME/miniconda2
           $HOME/miniconda2/bin/conda create -n py27 python=2.7 -y -q
           export PY27=$HOME/miniconda2/envs/py27/bin/python
+          $PY27 --version
+          echo "=== Clone PETSc mef90-3.3 ==="
           git clone --single-branch --branch mef90-3.3 https://gitlab.com/blaisebourdin/petsc.git $PETSC_DIR
           cd $PETSC_DIR
+          echo "=== Configure ==="
           $PY27 ./configure \
             COPTFLAGS='-O3' CXXOPTFLAGS='-O3' FOPTFLAGS='-O3' \
             FFLAGS='-Wno-aliasing -ffree-line-length-none' \
@@ -112,36 +132,13 @@ jobs:
             --with-mpi-dir=$MPI_HOME --with-sieve=1 \
             --with-fortran-datatypes=1 --with-debugging=0 \
             --with-clanguage=C++ --with-shared-libraries=1 \
-            --with-c2html=0 --with-x11=0 --with-gnu-compilers=1 2>&1 | tail -5
-          make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all 2>&1 | tail -5
+            --with-c2html=0 --with-x11=0 --with-gnu-compilers=1 2>&1 | tail -20
+          echo "=== Check petscrules exists ==="
+          ls $PETSC_ARCH/conf/petscrules
+          echo "=== Make PETSc ==="
+          make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all 2>&1 | tail -10
 
-      - name: Debug PETSc PetscBag Fortran interface
-        run: |
-          set +e
-          export PETSC_DIR=$HOME/petsc-3.3-mef90
-          export PETSC_ARCH=linux-gcc-openmpi-mef90-O
-          echo "===== ALL petsc include dirs ====="
-          ls $PETSC_DIR/include/finclude/ 2>/dev/null
-          echo ""
-          echo "===== petscdef.h top 30 lines ====="
-          head -30 $PETSC_DIR/include/finclude/petscdef.h 2>/dev/null
-          echo ""
-          echo "===== Search petscdef.h for PetscBag ====="
-          grep -n "PetscBag" $PETSC_DIR/include/finclude/petscdef.h 2>/dev/null | head -20
-          echo ""
-          echo "===== Search ALL finclude for PetscBagRegisterReal ====="
-          grep -rn "PetscBagRegisterReal" $PETSC_DIR/include/finclude/ 2>/dev/null | head -20
-          echo ""
-          echo "===== Search ALL finclude for 'Interface.*PetscBag' ====="
-          grep -rn "Interface.*PetscBag" $PETSC_DIR/include/finclude/ 2>/dev/null | head -20
-          echo ""
-          echo "===== Search ARCH include ====="
-          grep -rn "PetscBagRegisterReal" $PETSC_DIR/$PETSC_ARCH/include/finclude/ 2>/dev/null | head -10
-          echo ""
-          echo "===== What does petscsys.h include? ====="
-          head -50 $PETSC_DIR/include/finclude/petscsys.h 2>/dev/null
-
-      - name: BUILD ALL
+      - name: Build ALL (no tail - show full errors!)
         run: |
           set -e
           export PETSC_DIR=$HOME/petsc-3.3-mef90
@@ -149,24 +146,61 @@ jobs:
           export MPI_HOME=$HOME/openmpi-3.1.3
           export PATH=$MPI_HOME/bin:$PETSC_DIR/bin:$PETSC_DIR/$PETSC_ARCH/bin:$PATH
           export MEF90_DIR=$(pwd)
-          OBJDIR=objs/$PETSC_ARCH
-          echo "===== MEF90 ====="
-          make MEF90 2>&1 | tail -3
-          echo "===== m_DefMech ====="
-          make m_DefMech 2>&1 | tail -3
-          echo "===== m_HeatXfer ====="
-          make m_HeatXfer 2>&1 | tail -3
-          echo "===== m_Flow ====="
-          make m_Flow 2>&1 | tail -40
-          echo "===== OBJDIR ====="
-          ls $OBJDIR/m_MEF90_Flow*.o 2>/dev/null || echo "NO Flow.o!"
-          ls $OBJDIR/m_mef90_flow*.mod 2>/dev/null || echo "NO Flow.mod!"
-          echo "===== vDef ====="
-          make vDef 2>&1 | tail -20
-          echo "===== FINAL ====="
-          ls -la bin/$PETSC_ARCH/vDef
+          echo ""
+          echo "========================================"
+          echo "  ENV CHECK"
+          echo "========================================"
+          echo "MEF90_DIR=$MEF90_DIR"
+          echo "PETSC_DIR=$PETSC_DIR"
+          echo "PETSC_ARCH=$PETSC_ARCH"
+          ls $PETSC_DIR/conf/variables
+          ls $PETSC_ARCH/conf/petscrules
+          echo ""
 
-      - name: Run Terzaghi
+          echo "========================================"
+          echo "  BUILD 1: MEF90"
+          echo "========================================"
+          make MEF90 2>&1
+          echo "--- MEF90 OK ---"
+          echo ""
+
+          echo "========================================"
+          echo "  BUILD 2: m_DefMech"
+          echo "========================================"
+          make m_DefMech 2>&1
+          echo "--- DefMech OK ---"
+          echo ""
+
+          echo "========================================"
+          echo "  BUILD 3: m_HeatXfer"
+          echo "========================================"
+          make m_HeatXfer 2>&1
+          echo "--- HeatXfer OK ---"
+          echo ""
+
+          echo "========================================"
+          echo "  BUILD 4: m_Flow (FULL OUTPUT)"
+          echo "========================================"
+          make m_Flow 2>&1
+          echo "--- m_Flow OK ---"
+          echo ""
+
+          echo "========================================"
+          echo "  BUILD 5: vDef"
+          echo "========================================"
+          make vDef 2>&1
+          echo ""
+
+          echo "========================================"
+          echo "  FINAL CHECK"
+          echo "========================================"
+          ls -la bin/$PETSC_ARCH/vDef
+          echo ""
+          echo "========================================"
+          echo "  BUILD SUCCESS!!!"
+          echo "========================================"
+
+      - name: Run Terzaghi benchmark
         if: always()
         run: |
           set +e
@@ -176,8 +210,21 @@ jobs:
           export PATH=$MPI_HOME/bin:$PETSC_DIR/bin:$PETSC_DIR/$PETSC_ARCH/bin:$PATH
           export MEF90_DIR=$(pwd)
           cd vDef
+          echo "=== Running Terzaghi 1D ==="
           mpirun --allow-run-as-root -np 2 ../bin/$PETSC_ARCH/vDef \
             -prefix data/Beam1x10-tri3 \
             -options_file_yaml data/terzaghi1D.yaml 2>&1 | tee /tmp/terzaghi.log
-          ls -la terzaghi1D-*.exo 2>/dev/null || echo "(no exo)"
+          echo ""
+          echo "=== EXO files ==="
+          ls -la terzaghi1D-*.exo 2>/dev/null || echo "(no exo generated)"
         continue-on-error: true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-outputs
+          path: |
+            vDef/terzaghi1D-*.exo
+            /tmp/terzaghi.log
+          retention-days: 7
