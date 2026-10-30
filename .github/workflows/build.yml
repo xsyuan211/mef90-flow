@@ -117,19 +117,36 @@ jobs:
 
       - name: Debug PETSc PetscBag Fortran interface
         run: |
+          set +e
           export PETSC_DIR=$HOME/petsc-3.3-mef90
           export PETSC_ARCH=linux-gcc-openmpi-mef90-O
           echo "===== petscbagdef.h location ====="
-          find $PETSC_DIR -name "petscbagdef.h" 2>/dev/null
+          find $PETSC_DIR -name "petscbagdef.h" -o -name "*petscbag*.h" -o -name "*petscbag*.inc" 2>/dev/null
           echo ""
-          echo "===== PetscBagRegisterReal FORTRAN interface ====="
-          grep -B1 -A12 "Interface.*PetscBagRegisterReal" $PETSC_DIR/$PETSC_ARCH/include/finclude/petscbagdef.h 2>/dev/null | head -30
+          echo "===== ALL petsc include dirs ====="
+          ls $PETSC_DIR/include/finclude/ 2>/dev/null | head -20
+          ls $PETSC_DIR/$PETSC_ARCH/include/finclude/ 2>/dev/null | head -20
           echo ""
-          echo "===== Full petscbagdef.h ====="
-          cat $PETSC_DIR/$PETSC_ARCH/include/finclude/petscbagdef.h 2>/dev/null
+          echo "===== Search for PetscBagRegisterReal ====="
+          grep -r "PetscBagRegisterReal" $PETSC_DIR/include/ 2>/dev/null | head -10
+          grep -r "PetscBagRegisterReal" $PETSC_DIR/$PETSC_ARCH/include/ 2>/dev/null | head -10
+          echo ""
+          echo "===== petscbagdef.h contents (if any) ====="
+          if [ -f "$PETSC_DIR/include/finclude/petscbagdef.h" ]; then
+            echo "File exists, size: $(wc -c < $PETSC_DIR/include/finclude/petscbagdef.h) bytes"
+            cat "$PETSC_DIR/include/finclude/petscbagdef.h"
+          else
+            echo "petscbagdef.h NOT FOUND at include/finclude/"
+          fi
+          if [ -f "$PETSC_DIR/$PETSC_ARCH/include/finclude/petscbagdef.h" ]; then
+            echo "File exists at ARCH include, size: $(wc -c < $PETSC_DIR/$PETSC_ARCH/include/finclude/petscbagdef.h) bytes"
+            cat "$PETSC_DIR/$PETSC_ARCH/include/finclude/petscbagdef.h"
+          else
+            echo "petscbagdef.h NOT FOUND at ARCH include/finclude/"
+          fi
           echo ""
           echo "===== petscdef.h Check ====="
-          head -20 $PETSC_DIR/$PETSC_ARCH/include/finclude/petscdef.h
+          head -5 "$PETSC_DIR/include/finclude/petscdef.h" 2>/dev/null || echo "petscdef.h not found either!"
 
       - name: BUILD ALL
         run: |
