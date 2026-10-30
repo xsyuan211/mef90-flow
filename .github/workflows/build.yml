@@ -25,71 +25,54 @@ jobs:
           find . -type f $ -name "*.sh" -o -name "Makefile" -o -name "*.F90" -o -name "*.inc" -o -name "*.h" -o -name "*.yaml" -o -name "*.yml" $ -exec dos2unix -q {} \;
           chmod +x bin/makeversion.sh
 
-          echo "===== REMOVE petscbagdef.h ====="
+          echo "===== REMOVE petscbagdef.h from FlowCtx ====="
           sed -i '/petscbagdef.h/d' m_Flow/m_MEF90_FlowCtx.F90
+          echo "After sed:"
           head -8 m_Flow/m_MEF90_FlowCtx.F90
 
-          echo "===== Python patches ====="
-          cat > /tmp/patch.py << 'PYEOF'
-import re, os
-
-# 1. Swap include order in Makefiles
-for mk in ['m_Flow/Makefile', 'vDef/Makefile']:
-    if not os.path.exists(mk):
-        continue
-    with open(mk) as f:
-        c = f.read()
-    old = 'include ${PETSC_DIR}/conf/rules\ninclude ${PETSC_DIR}/conf/variables'
-    new = 'include ${PETSC_DIR}/conf/variables\ninclude ${PETSC_DIR}/conf/rules'
-    if old in c:
-        c = c.replace(old, new)
-        with open(mk, 'w') as f:
-            f.write(c)
-        print(f'{mk}: SWAPPED rules/variables')
-    else:
-        print(f'{mk}: pattern not found (maybe already swapped)')
-
-# 2. Add m_Flow/Makefile to vDef/Makefile
-mk = 'vDef/Makefile'
-with open(mk) as f:
-    c = f.read()
-if 'm_Flow/Makefile' not in c:
-    c = c.replace(
-        'include ${MEF90_DIR}/m_DefMech/Makefile.include',
-        'include ${MEF90_DIR}/m_DefMech/Makefile.include\ninclude ${MEF90_DIR}/m_Flow/Makefile'
-    )
-    with open(mk, 'w') as f:
-        f.write(c)
-    print('vDef/Makefile: ADDED m_Flow/Makefile include')
+          echo "===== Swap include order ====="
+          for f in m_Flow/Makefile vDef/Makefile; do
+            echo "--- $f before ---"
+            grep -n 'conf/' $f | head -3
+            python3 -c "
+import sys
+p='$f'
+with open(p) as fh: c=fh.read()
+old='include \${PETSC_DIR}/conf/rules\ninclude \${PETSC_DIR}/conf/variables'
+new='include \${PETSC_DIR}/conf/variables\ninclude \${PETSC_DIR}/conf/rules'
+if old in c:
+    c=c.replace(old,new)
+    with open(p,'w') as fh: fh.write(c)
+    print('SWAPPED')
 else:
-    print('vDef/Makefile: already has m_Flow/Makefile')
+    print('NOT FOUND')
+"
+            echo "--- $f after ---"
+            grep -n 'conf/' $f | head -3
+          done
 
-# 3. Clear MEF90_DIM in m_Flow/Makefile
-mk = 'm_Flow/Makefile'
-with open(mk) as f:
-    c = f.read()
-# Replace "make -C ${MEF90_DIR} MEF90 " with "make -C ${MEF90_DIR} MEF90 MEF90_DIM= "
-c = re.sub(
-    r'make -C \$\{MEF90_DIR\} MEF90 ',
-    'make -C ${MEF90_DIR} MEF90 MEF90_DIM= ',
-    c
-)
-with open(mk, 'w') as f:
-    f.write(c)
-print('m_Flow/Makefile: CLEARED MEF90_DIM')
-PYEOF
-          python3 /tmp/patch.py
-
-          echo "===== VERIFY ====="
-          echo "--- m_Flow/Makefile conf ---"
-          grep -n 'conf/' m_Flow/Makefile | head -3
-          echo "--- vDef/Makefile conf ---"
-          grep -n 'conf/' vDef/Makefile | head -3
-          echo "--- vDef/Makefile Makefile includes ---"
+          echo "===== vDef: add m_Flow/Makefile ====="
+          grep -q 'm_Flow/Makefile' vDef/Makefile || python3 -c "
+p='vDef/Makefile'
+with open(p) as fh: c=fh.read()
+c=c.replace('include \${MEF90_DIR}/m_DefMech/Makefile.include','include \${MEF90_DIR}/m_DefMech/Makefile.include\ninclude \${MEF90_DIR}/m_Flow/Makefile')
+with open(p,'w') as fh: fh.write(c)
+print('ADDED')
+"
+          echo "--- vDef Makefile includes ---"
           grep -n 'Makefile' vDef/Makefile | head -8
-          echo "--- m_Flow make MEF90 ---"
+
+          echo "===== m_Flow: clear MEF90_DIM ====="
+          python3 -c "
+import re
+p='m_Flow/Makefile'
+with open(p) as fh: c=fh.read()
+c=re.sub(r'make -C \$\{MEF90_DIR\} MEF90 ','make -C \${MEF90_DIR} MEF90 MEF90_DIM= ',c)
+with open(p,'w') as fh: fh.write(c)
+print('DONE')
+"
+          echo "--- m_Flow make MEF90 lines ---"
           grep -n 'make.*MEF90' m_Flow/Makefile
-          echo "===== PATCH DONE ====="
 
       - name: Build OpenMPI 3.1.3
         run: |
