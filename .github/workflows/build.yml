@@ -21,49 +21,64 @@ jobs:
             cmake make perl m4 git patch wget curl dos2unix \
             libtool automake
 
-      - name: Fix CRLF + permissions + PATCH ALL SOURCES
+      - name: PATCH ALL SOURCES (BEFORE BUILD!)
         run: |
+          echo "===== STEP 1: CRLF + perms ====="
           find . -type f -name "*.sh" -exec dos2unix -q {} \;
           find . -type f -name "Makefile" -exec dos2unix -q {} \;
           find . -type f -name "*.F90" -exec dos2unix -q {} \;
           find . -type f -name "*.inc" -exec dos2unix -q {} \;
           find . -type f -name "*.h" -exec dos2unix -q {} \;
           chmod +x bin/makeversion.sh
+          echo "CRLF done"
           echo ""
-          echo "=== PATCH 1: petscbagdef.h ==="
+          echo "===== STEP 2: petscbagdef.h include ====="
           for f in m_Flow/m_MEF90_FlowCtx.F90 MEF90/m_MEF90_Materials.F90; do
             if ! grep -q 'petscbagdef.h' "$f"; then
-              sed -i '/#include "finclude\/petscdef.h"/a#include "finclude/petscbagdef.h"' "$f"
-              echo "  Patched: $f"
+              sed -i '/petscdef.h/a #include "finclude/petscbagdef.h"' "$f"
+              echo "PATCHED: $f"
             else
-              echo "  OK: $f"
+              echo "OK: $f"
             fi
           done
+          head -6 m_Flow/m_MEF90_FlowCtx.F90
+          head -6 MEF90/m_MEF90_Materials.F90
           echo ""
-          echo "=== PATCH 2: Makefile include order ==="
+          echo "===== STEP 3: Swap rules/variables include order ====="
           for mk in m_Flow/Makefile vDef/Makefile; do
             if grep -q 'conf/rules' "$mk"; then
-              sed -i 's|include \${PETSC_DIR}/conf/rules|include ${PETSC_DIR}/__PETSC_RULES__|g' "$mk"
-              sed -i 's|include \${PETSC_DIR}/conf/variables|include ${PETSC_DIR}/conf/variables\ninclude ${PETSC_DIR}/conf/rules|g' "$mk"
-              sed -i '/__PETSC_RULES__/d' "$mk"
-              echo "  Fixed: $mk"
+              # Read all lines, swap the two includes
+              sed -i '/conf\/rules/d' "$mk"
+              sed -i '/conf\/variables/a include ${PETSC_DIR}/conf/rules' "$mk"
+              echo "FIXED include order: $mk"
             fi
           done
+          grep 'conf/' m_Flow/Makefile | head -3
+          grep 'conf/' vDef/Makefile | head -3
           echo ""
-          echo "=== PATCH 3: vDef/Makefile add m_Flow/Makefile ==="
+          echo "===== STEP 4: vDef/Makefile add m_Flow/Makefile ====="
           if ! grep -q 'm_Flow/Makefile' vDef/Makefile; then
-            sed -i '/include \${MEF90_DIR}\/m_DefMech\/Makefile.include/a include ${MEF90_DIR}/m_Flow/Makefile' vDef/Makefile
+            sed -i '/m_DefMech\/Makefile.include/a include ${MEF90_DIR}/m_Flow/Makefile' vDef/Makefile
+            echo "PATCHED vDef/Makefile"
           fi
           echo ""
-          echo "=== PATCH 4: m_Flow/Makefile DefMechCtx.o dep ==="
-          sed -i 's|objs/\${PETSC_ARCH}/m_DefMech\.o|objs/${PETSC_ARCH}/m_MEF90_DefMechCtx.o|g' m_Flow/Makefile
+          echo "===== STEP 5: Fix DefMechCtx.o dep ====="
+          sed -i 's|m_DefMech\.o|m_MEF90_DefMechCtx.o|g' m_Flow/Makefile
+          grep 'DefMech' m_Flow/Makefile
           echo ""
-          echo "=== VERIFY PATCHES ==="
-          head -6 m_Flow/m_MEF90_FlowCtx.F90
-          echo "---"
-          head -6 MEF90/m_MEF90_Materials.F90
-          echo "---"
-          head -8 m_Flow/Makefile
+          echo "===== STEP 6: CRITICAL - Clear MEF90_DIM when re-entering MEF90 ====="
+          # m_Flow/Makefile sets MEF90_DIM=2 on line 1, then does
+          #   -@make -C ${MEF90_DIR} MEF90
+          # This inherits MEF90_DIM=2 into MEF90 build → Materials.F90 compiles
+          # with wrong flags → 2D/3D Type mismatch!
+          # Fix: pass MEF90_DIM= (empty) on the re-enter
+          sed -i 's|make -C ${MEF90_DIR} MEF90|make -C ${MEF90_DIR} MEF90 MEF90_DIM=|g' m_Flow/Makefile
+          echo "BEFORE:"
+          grep 'MEF90_DIR} MEF90' m_Flow/Makefile || grep 'MEF90' m_Flow/Makefile | head -5
+          echo "AFTER:"
+          grep 'MEF90_DIR} MEF90' m_Flow/Makefile || grep 'MEF90' m_Flow/Makefile | head -5
+          echo ""
+          echo "===== ALL PATCHES DONE ====="
 
       - name: Build OpenMPI 3.1.3
         run: |
@@ -116,43 +131,30 @@ jobs:
             --with-c2html=0 --with-x11=0 --with-gnu-compilers=1 2>&1 | tail -5
           make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all 2>&1 | tail -5
 
-      - name: Build ALL modules (full output on error)
+      - name: BUILD ALL
         run: |
-          set +e
+          set -e
           export PETSC_DIR=$HOME/petsc-3.3-mef90
           export PETSC_ARCH=linux-gcc-openmpi-mef90-O
           export MPI_HOME=$HOME/openmpi-3.1.3
           export PATH=$MPI_HOME/bin:$PETSC_DIR/bin:$PETSC_DIR/$PETSC_ARCH/bin:$PATH
           export MEF90_DIR=$(pwd)
-          echo "=== MEF90 ==="
-          make MEF90 2>&1 | tail -5
-          echo ""
-          echo "=== m_DefMech ==="
-          make m_DefMech 2>&1 | tail -5
-          echo ""
-          echo "=== m_HeatXfer ==="
-          make m_HeatXfer 2>&1 | tail -5
-          echo ""
-          echo "=== m_Flow (FULL OUTPUT) ==="
-          make m_Flow 2>&1
-          FC=$?
-          echo ""
-          echo "=== OBJDIR contents ==="
-          ls objs/$PETSC_ARCH/*.mod 2>/dev/null | tail -20
-          ls objs/$PETSC_ARCH/m_MEF90_Flow*.o 2>/dev/null
-          echo ""
-          if [ $FC -ne 0 ]; then
-            echo "=== m_Flow FAILED, skipping vDef ==="
-            exit 1
-          fi
-          echo ""
-          echo "=== vDef (FULL OUTPUT) ==="
-          make vDef 2>&1
-          VC=$?
-          echo ""
-          echo "=== FINAL ==="
+          OBJDIR=objs/$PETSC_ARCH
+          echo "===== MEF90 ====="
+          make MEF90 2>&1 | tail -3
+          echo "===== m_DefMech ====="
+          make m_DefMech 2>&1 | tail -3
+          echo "===== m_HeatXfer ====="
+          make m_HeatXfer 2>&1 | tail -3
+          echo "===== m_Flow ====="
+          make m_Flow 2>&1 | tail -30
+          echo "===== OBJDIR ====="
+          ls $OBJDIR/m_MEF90_Flow*.o 2>/dev/null || echo "NO Flow.o!"
+          ls $OBJDIR/m_mef90_flow*.mod 2>/dev/null || echo "NO Flow.mod!"
+          echo "===== vDef ====="
+          make vDef 2>&1 | tail -20
+          echo "===== FINAL ====="
           ls -la bin/$PETSC_ARCH/vDef
-          exit $VC
 
       - name: Run Terzaghi
         if: always()
