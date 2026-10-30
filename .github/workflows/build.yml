@@ -120,33 +120,26 @@ jobs:
           set +e
           export PETSC_DIR=$HOME/petsc-3.3-mef90
           export PETSC_ARCH=linux-gcc-openmpi-mef90-O
-          echo "===== petscbagdef.h location ====="
-          find $PETSC_DIR -name "petscbagdef.h" -o -name "*petscbag*.h" -o -name "*petscbag*.inc" 2>/dev/null
-          echo ""
           echo "===== ALL petsc include dirs ====="
-          ls $PETSC_DIR/include/finclude/ 2>/dev/null | head -20
-          ls $PETSC_DIR/$PETSC_ARCH/include/finclude/ 2>/dev/null | head -20
+          ls $PETSC_DIR/include/finclude/ 2>/dev/null
           echo ""
-          echo "===== Search for PetscBagRegisterReal ====="
-          grep -r "PetscBagRegisterReal" $PETSC_DIR/include/ 2>/dev/null | head -10
-          grep -r "PetscBagRegisterReal" $PETSC_DIR/$PETSC_ARCH/include/ 2>/dev/null | head -10
+          echo "===== petscdef.h top 30 lines ====="
+          head -30 $PETSC_DIR/include/finclude/petscdef.h 2>/dev/null
           echo ""
-          echo "===== petscbagdef.h contents (if any) ====="
-          if [ -f "$PETSC_DIR/include/finclude/petscbagdef.h" ]; then
-            echo "File exists, size: $(wc -c < $PETSC_DIR/include/finclude/petscbagdef.h) bytes"
-            cat "$PETSC_DIR/include/finclude/petscbagdef.h"
-          else
-            echo "petscbagdef.h NOT FOUND at include/finclude/"
-          fi
-          if [ -f "$PETSC_DIR/$PETSC_ARCH/include/finclude/petscbagdef.h" ]; then
-            echo "File exists at ARCH include, size: $(wc -c < $PETSC_DIR/$PETSC_ARCH/include/finclude/petscbagdef.h) bytes"
-            cat "$PETSC_DIR/$PETSC_ARCH/include/finclude/petscbagdef.h"
-          else
-            echo "petscbagdef.h NOT FOUND at ARCH include/finclude/"
-          fi
+          echo "===== Search petscdef.h for PetscBag ====="
+          grep -n "PetscBag" $PETSC_DIR/include/finclude/petscdef.h 2>/dev/null | head -20
           echo ""
-          echo "===== petscdef.h Check ====="
-          head -5 "$PETSC_DIR/include/finclude/petscdef.h" 2>/dev/null || echo "petscdef.h not found either!"
+          echo "===== Search ALL finclude for PetscBagRegisterReal ====="
+          grep -rn "PetscBagRegisterReal" $PETSC_DIR/include/finclude/ 2>/dev/null | head -20
+          echo ""
+          echo "===== Search ALL finclude for 'Interface.*PetscBag' ====="
+          grep -rn "Interface.*PetscBag" $PETSC_DIR/include/finclude/ 2>/dev/null | head -20
+          echo ""
+          echo "===== Search ARCH include ====="
+          grep -rn "PetscBagRegisterReal" $PETSC_DIR/$PETSC_ARCH/include/finclude/ 2>/dev/null | head -10
+          echo ""
+          echo "===== What does petscsys.h include? ====="
+          head -50 $PETSC_DIR/include/finclude/petscsys.h 2>/dev/null
 
       - name: BUILD ALL
         run: |
