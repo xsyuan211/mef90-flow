@@ -119,7 +119,6 @@ End Module m_MEF90_FlowCtx_Type
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Module m_MEF90FlowGlobalOptions_Private
 #include "finclude/petscdef.h"
-#include "finclude/petscbagdef.h"
    Use m_MEF90
    Use m_MEF90_FlowCtx_Type
    Implicit None
