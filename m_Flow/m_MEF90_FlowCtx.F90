@@ -611,7 +611,7 @@ Contains
       Call PetscBagRegisterBool(bag,FlowVertexSetOptions%Has_BC,default%Has_BC, &
            'flow_has_bc','Vertex set has pressure Dirichlet BC',ierr);CHKERRQ(ierr)
       Call PetscBagRegisterReal(bag,FlowVertexSetOptions%boundaryPressure, &
-           default%boundaryPressure,'Pressure value (Pa)',ierr);CHKERRQ(ierr)
+           default%boundaryPressure,'Pressure value (Pa)','Dirichlet BC pressure (Pa)',ierr);CHKERRQ(ierr)
    End Subroutine PetscBagRegisterMEF90FlowCtxVertexSetOptions
 
 
