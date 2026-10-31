@@ -195,36 +195,44 @@ jobs:
           grep -n 'Type(SNES)' /tmp/assemble3D.i | head -5
 
           # ============================================================
-          #  ACTUAL m_Flow BUILD — FULL LOG, NO TRUNCATION
+          #  ACTUAL m_Flow BUILD — granular output to avoid truncation
           # ============================================================
           echo ""
-          echo "=== 5) BUILD m_Flow (FULL LOG to /tmp/flow.log) ==="
-          make m_Flow > /tmp/flow.log 2>&1
-          FLOW_RC=$?
-          echo "m_Flow exit code: $FLOW_RC"
-          echo ""
-          echo "=== /tmp/flow.log (COMPLETE, NO TAIL) ==="
-          cat /tmp/flow.log
-          echo ""
-          echo "=== ERROR SUMMARY (grep of flow.log) ==="
-          grep -n -iE "error|fatal|undefined|no implicit|cannot open|does not exist|not found" /tmp/flow.log || echo "  (no error matches — great!)"
+          echo "=== 5) BUILD m_Flow ==="
+          # Wipe ALL Flow .o/.mod first to force clean rebuild each time
+          rm -f objs/${PETSC_ARCH}/m_MEF90_Flow*.o objs/${PETSC_ARCH}/m_mef90_flow*.mod
+          echo "--- 5a) FlowCtx ---"
+          make objs/${PETSC_ARCH}/m_MEF90_FlowCtx.o 2>&1 | tail -10; echo "RC=$?"
+          echo "--- 5b) FlowAssembly2D (MEF90_DIM=2) ---"
+          rm -f objs/${PETSC_ARCH}/m_MEF90_FlowAssembly2D.o
+          make objs/${PETSC_ARCH}/m_MEF90_FlowAssembly2D.o 2>&1 | tail -20; echo "RC=$?"
+          echo "--- 5c) FlowAssembly3D (MEF90_DIM=3) ---"
+          rm -f objs/${PETSC_ARCH}/m_MEF90_FlowAssembly3D.o
+          make objs/${PETSC_ARCH}/m_MEF90_FlowAssembly3D.o 2>&1 | tail -20; echo "RC=$?"
+          echo "--- 5d) m_MEF90_Flow.o (main module) ---"
+          rm -f objs/${PETSC_ARCH}/m_MEF90_Flow.o objs/${PETSC_ARCH}/m_mef90_flow.mod
+          make objs/${PETSC_ARCH}/m_MEF90_Flow.o 2>&1 | tail -20; echo "RC=$?"
+          echo "--- 5e) OBJS STATE ---"
+          ls -la objs/${PETSC_ARCH}/m_MEF90_Flow* 2>&1 || echo "  (no Flow .o)"
+          ls -la objs/${PETSC_ARCH}/m_mef90_flow* 2>&1 || echo "  (no Flow .mod)"
+          echo "--- 5f) ERROR SUMMARY across all Flow attempts ---"
+          {
+            make objs/${PETSC_ARCH}/m_MEF90_FlowAssembly2D.o 2>&1
+            make objs/${PETSC_ARCH}/m_MEF90_FlowAssembly3D.o 2>&1
+            make objs/${PETSC_ARCH}/m_MEF90_Flow.o 2>&1
+          } | grep -n -iE "error|fatal|undefined|no implicit|cannot open|does not exist|not found|Error:" || echo "  (no error matches — great!)"
 
-          echo ""
-          echo "=== 6) OBJS STATE after m_Flow ==="
-          ls -la objs/${PETSC_ARCH}/m_MEF90_Flow* 2>&1 || echo "  (no Flow .o files)"
-          ls -la objs/${PETSC_ARCH}/m_mef90_flow* 2>&1 || echo "  (no Flow .mod files)"
-
           # ============================================================
-          #  vDef (only if m_Flow succeeded)
+          #  vDef (only if all m_Flow .o files exist)
           # ============================================================
           echo ""
-          echo "=== 7) BUILD vDef ==="
-          if [ $FLOW_RC -eq 0 ]; then
-            make vDef 2>&1 | tee /tmp/vdef.log | tail -20
+          echo "=== 6) BUILD vDef ==="
+          if [ -f objs/${PETSC_ARCH}/m_MEF90_Flow.o ]; then
+            make vDef 2>&1 | tee /tmp/vdef.log | tail -30
             echo "=== vDef binary ==="
             ls -la bin/$PETSC_ARCH/vDef 2>&1 || echo "  (vDef not found)"
           else
-            echo "  SKIPPED — m_Flow failed (exit $FLOW_RC)"
+            echo "  SKIPPED — m_MEF90_Flow.o missing, can't link vDef"
           fi
       - name: Run Terzaghi
         if: always()
