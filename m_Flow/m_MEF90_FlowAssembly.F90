@@ -2,6 +2,7 @@
 Module MEF90_APPEND(m_MEF90_FlowAssembly,MEF90_DIM)D
 #include "finclude/petscdef.h"
 #include "finclude/petscbagdef.h"
+#include "finclude/petsctsdef.h"
    Use m_MEF90
    Use m_MEF90_FlowCtx
    Use m_MEF90_DiffusionInterface   !!! Reuse Bourdin's well-tested diffusion assembly
@@ -218,6 +219,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #undef __FUNCT__
 #define __FUNCT__ "MEF90FlowIFunction"
+
    Subroutine MEF90FlowIFunction(ts,t,x,xDot,F,FlowCtx,ierr)
       Type(TS),Intent(IN)                                :: ts
       PetscReal,Intent(IN)                               :: t
@@ -225,7 +227,7 @@ Contains
       Type(Vec),Intent(INOUT)                            :: F
       Type(MEF90FlowCtx_Type),Intent(IN)                 :: FlowCtx
       PetscErrorCode,Intent(OUT)                         :: ierr
-      Type(SNES)                                         :: dummySNES
+      Type(SNES)                                         :: dummySNES  !!! PETSc 3.3 has no PETSC_NULL_SNES — use local dummy
       Call MEF90FlowOperator(dummySNES,x,F,FlowCtx,ierr)
       Call MEF90FlowAddStorageToResidual(F,xDot,FlowCtx,ierr)
    End Subroutine MEF90FlowIFunction
