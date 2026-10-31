@@ -144,10 +144,15 @@ jobs:
           export MPI_HOME=$HOME/openmpi-3.1.3
           export PATH=$MPI_HOME/bin:$PETSC_DIR/bin:$PETSC_DIR/$PETSC_ARCH/bin:$PATH
           export MEF90_DIR=$(pwd)
+          # GCC 10+ upgrade argument-mismatch from warning → error; PetscBagRegisterRealArray
+          # uses void* that gfortran cannot type-check. This flag is standard PETSc workaround.
+          export FCFLAGS="-fallow-argument-mismatch"
+          export FFLAGS="-fallow-argument-mismatch"
           echo "=== ENV ==="
           echo "MEF90_DIR=$MEF90_DIR"
           echo "PETSC_DIR=$PETSC_DIR"
           echo "PETSC_ARCH=$PETSC_ARCH"
+          echo "FCFLAGS=$FCFLAGS"
           ls $PETSC_DIR/conf/variables
           ls bin/makeversion.sh
 
@@ -202,24 +207,24 @@ jobs:
           # Wipe ALL Flow .o/.mod first to force clean rebuild each time
           rm -f objs/${PETSC_ARCH}/m_MEF90_Flow*.o objs/${PETSC_ARCH}/m_mef90_flow*.mod
           echo "--- 5a) FlowCtx ---"
-          make objs/${PETSC_ARCH}/m_MEF90_FlowCtx.o 2>&1 | tail -10; echo "RC=$?"
+          make m_MEF90_FlowCtx.o 2>&1 | tail -10; echo "RC=$?"
           echo "--- 5b) FlowAssembly2D (MEF90_DIM=2) ---"
           rm -f objs/${PETSC_ARCH}/m_MEF90_FlowAssembly2D.o
-          make objs/${PETSC_ARCH}/m_MEF90_FlowAssembly2D.o 2>&1 | tail -20; echo "RC=$?"
+          make m_MEF90_FlowAssembly2D.o 2>&1 | tail -20; echo "RC=$?"
           echo "--- 5c) FlowAssembly3D (MEF90_DIM=3) ---"
           rm -f objs/${PETSC_ARCH}/m_MEF90_FlowAssembly3D.o
-          make objs/${PETSC_ARCH}/m_MEF90_FlowAssembly3D.o 2>&1 | tail -20; echo "RC=$?"
+          make m_MEF90_FlowAssembly3D.o 2>&1 | tail -20; echo "RC=$?"
           echo "--- 5d) m_MEF90_Flow.o (main module) ---"
           rm -f objs/${PETSC_ARCH}/m_MEF90_Flow.o objs/${PETSC_ARCH}/m_mef90_flow.mod
-          make objs/${PETSC_ARCH}/m_MEF90_Flow.o 2>&1 | tail -20; echo "RC=$?"
+          make m_MEF90_Flow.o 2>&1 | tail -20; echo "RC=$?"
           echo "--- 5e) OBJS STATE ---"
           ls -la objs/${PETSC_ARCH}/m_MEF90_Flow* 2>&1 || echo "  (no Flow .o)"
           ls -la objs/${PETSC_ARCH}/m_mef90_flow* 2>&1 || echo "  (no Flow .mod)"
           echo "--- 5f) ERROR SUMMARY across all Flow attempts ---"
           {
-            make objs/${PETSC_ARCH}/m_MEF90_FlowAssembly2D.o 2>&1
-            make objs/${PETSC_ARCH}/m_MEF90_FlowAssembly3D.o 2>&1
-            make objs/${PETSC_ARCH}/m_MEF90_Flow.o 2>&1
+            make m_MEF90_FlowAssembly2D.o 2>&1
+            make m_MEF90_FlowAssembly3D.o 2>&1
+            make m_MEF90_Flow.o 2>&1
           } | grep -n -iE "error|fatal|undefined|no implicit|cannot open|does not exist|not found|Error:" || echo "  (no error matches — great!)"
 
           # ============================================================
