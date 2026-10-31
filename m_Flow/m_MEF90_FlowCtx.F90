@@ -633,7 +633,13 @@ Contains
       Type(MEF90FlowGlobalOptions_Type),pointer             :: gOpt
       Type(MEF90CtxGlobalOptions_Type),pointer              :: MEF90CtxGlobalOptions
       Type(IS)                                              :: setIS
-      ...
+      PetscInt                                               :: set, numSet
+      PetscInt,dimension(:),Pointer                          :: setID
+      Character(len=MEF90_MXSTRLEN)                          :: setName, setprefix
+      Type(MEF90FlowCellSetOptions_Type)                     :: myDefaultCellSetOptions
+      Type(MEF90FlowVertexSetOptions_Type)                   :: myDefaultVertexSetOptions
+      Type(MEF90Element_Type),Dimension(:),Pointer          :: ElemTypeScal
+
       Call PetscBagGetDataMEF90CtxGlobalOptions(FlowCtx%MEF90Ctx%GlobalOptionsBag,MEF90CtxGlobalOptions,ierr);CHKERRQ(ierr)
 
       !!! Global bag — YAML top-level key is 'flow:' (PetscBagSetName='flow')
