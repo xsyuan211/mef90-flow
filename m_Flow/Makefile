@@ -27,6 +27,6 @@ m_MEF90_FlowCtx.o: ${BASE_DIR}/m_MEF90_FlowCtx.F90
 	-@${FC} ${FC_FLAGS} ${FCPPFLAGS} -I${MEF90_INCLUDE} -c -o $@ $<
 
 MEF90:
-	make -C ${MEF90_DIR} MEF90
+	make -C ${MEF90_DIR} MEF90 MEF90_DIM=
 allclean:
 	make -C ${MEF90_DIR} clean
