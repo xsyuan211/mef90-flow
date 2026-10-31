@@ -3,7 +3,7 @@ Module m_MEF90_Flow
 #include "finclude/petscdef.h"
    Use m_MEF90
    Use m_MEF90_FlowCtx
-   Use m_MEF90_DefMechCtx     !!! NEW: for MEF90DefMechCtx_Type reference
+   Use m_MEF90_DefMechCtx_Type   !!! for MEF90DefMechCtx_Type reference
    Use m_MEF90_FlowAssembly2D, &   !!! NEW: bridge to 2D dimmed assembly template
       MEF90FlowOperator2D               => MEF90FlowOperator, &
       MEF90FlowBilinearForm2D           => MEF90FlowBilinearForm, &
@@ -214,7 +214,7 @@ Contains
       PetscInt                                            :: set, cell
       PetscReal                                           :: damageGauss, vGauss, k_v, k_eff
       PetscReal,Dimension(:),Pointer                      :: dmgPtr
-      PetscReal,Dimension(1)                              :: permPtr
+      PetscReal,Dimension(:),Pointer                      :: permPtr
       PetscInt                                            :: iDoF, iGauss, QuadratureOrder
 
       Call PetscBagGetDataMEF90FlowCtxGlobalOptions(FlowCtx%GlobalOptionsBag,gOpt,ierr);CHKERRQ(ierr)
@@ -262,9 +262,11 @@ Contains
             k_v = k_eff + (gOpt%permeabilityMax - k_eff) * vGauss
 
             !!! Store as cell scalar: permField(cell) = k_v / mu
+            Allocate(permPtr(1))
             Call SectionRealRestrict(FlowCtx%cellDMScalSec,setIdx(cell),permPtr,ierr);CHKERRQ(ierr)
             permPtr(1) = k_v / max(gOpt%dynamicViscosity,1e-12_Kr)
             Call SectionRealRestore(FlowCtx%cellDMScalSec,setIdx(cell),permPtr,ierr);CHKERRQ(ierr)
+            DeAllocate(permPtr)
          End Do
          DeAllocate(dmgPtr)
          Call MEF90Element_Destroy(elem,ierr);CHKERRQ(ierr)
@@ -297,7 +299,7 @@ Contains
       PetscInt,dimension(:),Pointer                       :: setID
       PetscInt                                            :: set, cell
       PetscReal                                           :: S_eff
-      PetscReal,Dimension(1)                              :: Sptr
+      PetscReal,Dimension(:),Pointer                      :: Sptr
 
       Call PetscBagGetDataMEF90FlowCtxGlobalOptions(FlowCtx%GlobalOptionsBag,gOpt,ierr);CHKERRQ(ierr)
       Call DMmeshGetLabelIdIS(FlowCtx%DM,'Cell Sets',CellSetGlobalIS,ierr);CHKERRQ(ierr)
@@ -312,9 +314,11 @@ Contains
          Call DMMeshGetStratumIS(FlowCtx%DM,'Cell Sets',setID(set),setIS,ierr);CHKERRQ(ierr)
          Call ISGetIndicesF90(setIS,setIdx,ierr);CHKERRQ(ierr)
          Do cell = 1, size(setIdx)
+            Allocate(Sptr(1))
             Call SectionRealRestrict(FlowCtx%cellDMScalSec,setIdx(cell),Sptr,ierr);CHKERRQ(ierr)
             Sptr(1) = S_eff
             Call SectionRealRestore(FlowCtx%cellDMScalSec,setIdx(cell),Sptr,ierr);CHKERRQ(ierr)
+            DeAllocate(Sptr)
          End Do
          Call ISRestoreIndicesF90(setIS,setIdx,ierr);CHKERRQ(ierr)
          Call ISDestroy(setIS,ierr);CHKERRQ(ierr)
