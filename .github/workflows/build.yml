@@ -25,6 +25,31 @@ jobs:
           find . -type f -name "*.inc" -exec dos2unix -q {} \;
           find . -type f -name "*.h" -exec dos2unix -q {} \;
           chmod +x bin/makeversion.sh
+      - name: Patch m_Flow sources (petsctsdef.h + dummySNES + module name)
+        run: |
+          set -e
+          echo "=== Before patch: FlowAssembly.F90 headers ==="
+          grep -n "include\|Use.*DefMechCtx" m_Flow/m_MEF90_FlowAssembly.F90 | head -10
+          echo "=== Before patch: Flow.F90 headers ==="
+          grep -n "include\|Use.*DefMechCtx" m_Flow/m_MEF90_Flow.F90 | head -10
+          # --- FlowAssembly.F90 ---
+          # 1) Add petsctsdef.h after petscbagdef.h (so Type(TS) visible)
+          sed -i '/#include "finclude\/petscbagdef.h"/a #include "finclude/petsctsdef.h"' m_Flow/m_MEF90_FlowAssembly.F90
+          # 2) IFunction: add dummySNES decl + replace PETSC_NULL_OBJECT
+          sed -i '/Call MEF90FlowOperator(PETSC_NULL_OBJECT/i\      Type(SNES)                                         :: dummySNES' m_Flow/m_MEF90_FlowAssembly.F90
+          sed -i 's/Call MEF90FlowOperator(PETSC_NULL_OBJECT/Call MEF90FlowOperator(dummySNES/' m_Flow/m_MEF90_FlowAssembly.F90
+          # 3) IJacobian: add dummySNES decl + replace PETSC_NULL_OBJECT
+          sed -i '/Call MEF90FlowBilinearForm(PETSC_NULL_OBJECT.*1.0_Kr/i\      Type(SNES)                                         :: dummySNES' m_Flow/m_MEF90_FlowAssembly.F90
+          sed -i 's/Call MEF90FlowBilinearForm(PETSC_NULL_OBJECT,/Call MEF90FlowBilinearForm(dummySNES,/' m_Flow/m_MEF90_FlowAssembly.F90
+          # --- Flow.F90 ---
+          # 4) Add petsctsdef.h after petscdef.h (TS used in IFunction/IJacobian/CreateTS)
+          sed -i '/#include "finclude\/petscdef.h"/a #include "finclude/petsctsdef.h"' m_Flow/m_MEF90_Flow.F90
+          # 5) Fix wrong module name: m_MEF90_DefMechCtx -> m_MEF90_DefMechCtx_Type
+          sed -i 's/Use m_MEF90_DefMechCtx\b/Use m_MEF90_DefMechCtx_Type/' m_Flow/m_MEF90_Flow.F90
+          echo "=== After patch: FlowAssembly.F90 headers ==="
+          grep -n "include\|Use.*DefMechCtx\|dummySNES" m_Flow/m_MEF90_FlowAssembly.F90 | head -15
+          echo "=== After patch: Flow.F90 headers ==="
+          grep -n "include\|Use.*DefMechCtx" m_Flow/m_MEF90_Flow.F90 | head -10
       - name: Build OpenMPI 3.1.3
         run: |
           set -e
