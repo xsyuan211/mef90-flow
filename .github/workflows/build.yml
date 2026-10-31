@@ -25,31 +25,49 @@ jobs:
           find . -type f -name "*.inc" -exec dos2unix -q {} \;
           find . -type f -name "*.h" -exec dos2unix -q {} \;
           chmod +x bin/makeversion.sh
-      - name: Patch m_Flow sources (petsctsdef.h + dummySNES + module name)
+      - name: Patch sources + Makefile (one-shot)
         run: |
           set -e
-          echo "=== Before patch: FlowAssembly.F90 headers ==="
-          grep -n "include\|Use.*DefMechCtx" m_Flow/m_MEF90_FlowAssembly.F90 | head -10
-          echo "=== Before patch: Flow.F90 headers ==="
-          grep -n "include\|Use.*DefMechCtx" m_Flow/m_MEF90_Flow.F90 | head -10
-          # --- FlowAssembly.F90 ---
-          # 1) Add petsctsdef.h after petscbagdef.h (so Type(TS) visible)
+          echo "===== PATCH STEP ====="
+          echo ""
+          echo "--- FlowAssembly.F90 header state BEFORE patch ---"
+          grep -n '#include\|Use m_MEF90_DefMechCtx' m_Flow/m_MEF90_FlowAssembly.F90
+          echo ""
+          echo "--- Flow.F90 header state BEFORE patch ---"
+          grep -n '#include\|Use m_MEF90_DefMechCtx' m_Flow/m_MEF90_Flow.F90
+          echo ""
+          echo "--- Makefile BEFORE patch (FC lines) ---"
+          grep -n '\${FC}' m_Flow/Makefile
+          echo ""
+          # ============ m_MEF90_FlowAssembly.F90 patches ============
+          # P1: Add petsctsdef.h after petscbagdef.h
           sed -i '/#include "finclude\/petscbagdef.h"/a #include "finclude/petsctsdef.h"' m_Flow/m_MEF90_FlowAssembly.F90
-          # 2) IFunction: add dummySNES decl + replace PETSC_NULL_OBJECT
+          # P2: IFunction — add dummySNES decl + replace PETSC_NULL_OBJECT
           sed -i '/Call MEF90FlowOperator(PETSC_NULL_OBJECT/i\      Type(SNES)                                         :: dummySNES' m_Flow/m_MEF90_FlowAssembly.F90
           sed -i 's/Call MEF90FlowOperator(PETSC_NULL_OBJECT/Call MEF90FlowOperator(dummySNES/' m_Flow/m_MEF90_FlowAssembly.F90
-          # 3) IJacobian: add dummySNES decl + replace PETSC_NULL_OBJECT
+          # P3: IJacobian — add dummySNES decl + replace PETSC_NULL_OBJECT
           sed -i '/Call MEF90FlowBilinearForm(PETSC_NULL_OBJECT.*1.0_Kr/i\      Type(SNES)                                         :: dummySNES' m_Flow/m_MEF90_FlowAssembly.F90
           sed -i 's/Call MEF90FlowBilinearForm(PETSC_NULL_OBJECT,/Call MEF90FlowBilinearForm(dummySNES,/' m_Flow/m_MEF90_FlowAssembly.F90
-          # --- Flow.F90 ---
-          # 4) Add petsctsdef.h after petscdef.h (TS used in IFunction/IJacobian/CreateTS)
+          # ============ m_MEF90_Flow.F90 patches ============
+          # P4: Add petsctsdef.h after petscdef.h
           sed -i '/#include "finclude\/petscdef.h"/a #include "finclude/petsctsdef.h"' m_Flow/m_MEF90_Flow.F90
-          # 5) Fix wrong module name: m_MEF90_DefMechCtx -> m_MEF90_DefMechCtx_Type
+          # P5: Fix wrong module name
           sed -i 's/Use m_MEF90_DefMechCtx\b/Use m_MEF90_DefMechCtx_Type/' m_Flow/m_MEF90_Flow.F90
-          echo "=== After patch: FlowAssembly.F90 headers ==="
-          grep -n "include\|Use.*DefMechCtx\|dummySNES" m_Flow/m_MEF90_FlowAssembly.F90 | head -15
-          echo "=== After patch: Flow.F90 headers ==="
-          grep -n "include\|Use.*DefMechCtx" m_Flow/m_MEF90_Flow.F90 | head -10
+          # ============ Makefile patches ============
+          # P6: Remove leading '-' from FC lines so errors are visible
+          sed -i 's/^-\(@.*\${FC}\)/\1/' m_Flow/Makefile
+          sed -i 's/^-\(\${FC}\)/\1/' m_Flow/Makefile
+          echo ""
+          echo "--- FlowAssembly.F90 header state AFTER patch ---"
+          grep -n '#include\|Use m_MEF90_DefMechCtx\|dummySNES' m_Flow/m_MEF90_FlowAssembly.F90
+          echo ""
+          echo "--- Flow.F90 header state AFTER patch ---"
+          grep -n '#include\|Use m_MEF90_DefMechCtx' m_Flow/m_MEF90_Flow.F90
+          echo ""
+          echo "--- Makefile AFTER patch (FC lines) ---"
+          grep -n '\${FC}' m_Flow/Makefile
+          echo ""
+          echo "===== PATCH DONE ====="
       - name: Build OpenMPI 3.1.3
         run: |
           set -e
@@ -108,7 +126,7 @@ jobs:
           make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all 2>&1 | tail -10
       - name: Build MEF90 + m_Flow + vDef
         run: |
-          set +e    # 不提前退出,保留完整错误输出
+          set +e
           export PETSC_DIR=$HOME/petsc-3.3-mef90
           export PETSC_ARCH=linux-gcc-openmpi-mef90-O
           export MPI_HOME=$HOME/openmpi-3.1.3
@@ -120,30 +138,82 @@ jobs:
           echo "PETSC_ARCH=$PETSC_ARCH"
           ls $PETSC_DIR/conf/variables
           ls bin/makeversion.sh
-          echo "=== Clean any stale m_Flow artifacts ==="
+
+          echo ""
+          echo "=== 0) CLEAN stale m_Flow artifacts ==="
           rm -rf objs/${PETSC_ARCH}/m_MEF90_Flow*.o objs/${PETSC_ARCH}/m_mef90_flow*.mod
-          echo "=== MEF90 ==="
-          make MEF90 2>&1 | tee /tmp/build.log | tail -5
-          echo "=== m_DefMech ==="
-          make m_DefMech 2>&1 | tee -a /tmp/build.log | tail -5
-          echo "=== m_HeatXfer ==="
-          make m_HeatXfer 2>&1 | tee -a /tmp/build.log | tail -5
-          echo "=== m_Flow (FULL LOG, no truncation) ==="
+          ls -la objs/${PETSC_ARCH}/m_MEF90_Flow* objs/${PETSC_ARCH}/m_mef90_flow* 2>&1 || echo "  (all cleaned)"
+
+          echo ""
+          echo "=== 1) BUILD MEF90 (core) ==="
+          make MEF90 2>&1 | tail -3
+
+          echo ""
+          echo "=== 2) BUILD m_DefMech ==="
+          make m_DefMech 2>&1 | tail -3
+
+          echo ""
+          echo "=== 3) BUILD m_HeatXfer ==="
+          make m_HeatXfer 2>&1 | tail -3
+
+          # ============================================================
+          #  PREPROCESSOR DIAGNOSTIC — check if Type(TS) survives -E
+          # ============================================================
+          echo ""
+          echo "=== 4) DIAGNOSTIC: gfortran -E FlowAssembly.F90 ==="
+          FC_INCLUDES="-I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include -I${MEF90_DIR}/MEF90"
+          echo "--- -DMEF90_DIM=3: does 'Type(TS)' survive preprocessing? ---"
+          gfortran -E -DMEF90_DIM=3 $FC_INCLUDES m_Flow/m_MEF90_FlowAssembly.F90 > /tmp/assemble3D.i 2>&1
+          echo "  preproc RC=$?, lines=$(wc -l < /tmp/assemble3D.i)"
+          echo "  grep 'Type(TS)': $(grep -c 'Type(TS)' /tmp/assemble3D.i)"
+          echo "  grep 'Type(SNES)': $(grep -c 'Type(SNES)' /tmp/assemble3D.i)"
+          echo "  grep 'Type(DM)': $(grep -c 'Type(DM)' /tmp/assemble3D.i)"
+          echo "  grep 'Type(SectionReal)': $(grep -c 'Type(SectionReal)' /tmp/assemble3D.i)"
+          echo "--- -DMEF90_DIM=2: same check ---"
+          gfortran -E -DMEF90_DIM=2 $FC_INCLUDES m_Flow/m_MEF90_FlowAssembly.F90 > /tmp/assemble2D.i 2>&1
+          echo "  preproc RC=$?, lines=$(wc -l < /tmp/assemble2D.i)"
+          echo "  grep 'Type(TS)': $(grep -c 'Type(TS)' /tmp/assemble2D.i)"
+          echo "  grep 'Type(SNES)': $(grep -c 'Type(SNES)' /tmp/assemble2D.i)"
+          echo "  grep 'Type(DM)': $(grep -c 'Type(DM)' /tmp/assemble2D.i)"
+          echo ""
+          echo "--- Sample TS lines from -DMEF90_DIM=3 preprocessed output ---"
+          grep -n 'Type(TS)' /tmp/assemble3D.i | head -5 || echo "  !! NO Type(TS) FOUND — petsctsdef.h not included !!"
+          echo ""
+          echo "--- Sample SNES lines from -DMEF90_DIM=3 ---"
+          grep -n 'Type(SNES)' /tmp/assemble3D.i | head -5
+
+          # ============================================================
+          #  ACTUAL m_Flow BUILD — FULL LOG, NO TRUNCATION
+          # ============================================================
+          echo ""
+          echo "=== 5) BUILD m_Flow (FULL LOG to /tmp/flow.log) ==="
           make m_Flow > /tmp/flow.log 2>&1
           FLOW_RC=$?
           echo "m_Flow exit code: $FLOW_RC"
+          echo ""
+          echo "=== /tmp/flow.log (COMPLETE, NO TAIL) ==="
           cat /tmp/flow.log
-          if [ $FLOW_RC -ne 0 ]; then
-            echo ""
-            echo "=== ERROR SUMMARY (m_Flow) ==="
-            grep -n -i "error\|fatal\|undefined\|no implicit\|cannot open" /tmp/flow.log || echo "(no grep matches)"
+          echo ""
+          echo "=== ERROR SUMMARY (grep of flow.log) ==="
+          grep -n -iE "error|fatal|undefined|no implicit|cannot open|does not exist|not found" /tmp/flow.log || echo "  (no error matches — great!)"
+
+          echo ""
+          echo "=== 6) OBJS STATE after m_Flow ==="
+          ls -la objs/${PETSC_ARCH}/m_MEF90_Flow* 2>&1 || echo "  (no Flow .o files)"
+          ls -la objs/${PETSC_ARCH}/m_mef90_flow* 2>&1 || echo "  (no Flow .mod files)"
+
+          # ============================================================
+          #  vDef (only if m_Flow succeeded)
+          # ============================================================
+          echo ""
+          echo "=== 7) BUILD vDef ==="
+          if [ $FLOW_RC -eq 0 ]; then
+            make vDef 2>&1 | tee /tmp/vdef.log | tail -20
+            echo "=== vDef binary ==="
+            ls -la bin/$PETSC_ARCH/vDef 2>&1 || echo "  (vDef not found)"
+          else
+            echo "  SKIPPED — m_Flow failed (exit $FLOW_RC)"
           fi
-          echo "=== vDef ==="
-          make vDef 2>&1 | tee -a /tmp/build.log | tail -30
-          echo "=== FINAL OBJS STATE ==="
-          ls -la objs/${PETSC_ARCH}/m_MEF90_Flow* objs/${PETSC_ARCH}/m_mef90_flow* 2>&1 || echo "(no Flow artifacts yet)"
-          echo "=== BUILD DONE ==="
-          ls -la bin/$PETSC_ARCH/vDef 2>&1 || echo "vDef binary not found"
       - name: Run Terzaghi
         if: always()
         run: |
@@ -159,12 +229,15 @@ jobs:
             -options_file_yaml data/terzaghi1D.yaml 2>&1 | tee /tmp/terzaghi.log
           ls -la terzaghi1D-*.exo 2>/dev/null || echo "(no exo)"
         continue-on-error: true
-      - name: Upload artifacts
+      - name: Upload diagnostics
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: build-outputs
+          name: build-diagnostics
           path: |
-            vDef/terzaghi1D-*.exo
+            /tmp/flow.log
+            /tmp/assemble3D.i
+            /tmp/assemble2D.i
+            /tmp/vdef.log
             /tmp/terzaghi.log
           retention-days: 7
