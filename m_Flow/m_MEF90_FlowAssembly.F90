@@ -226,7 +226,8 @@ Contains
       Type(Vec),Intent(INOUT)                            :: F
       Type(MEF90FlowCtx_Type),Intent(IN)                 :: FlowCtx
       PetscErrorCode,Intent(OUT)                         :: ierr
-      Call MEF90FlowOperator(PETSC_NULL_SNES,x,F,FlowCtx,ierr)
+      Type(SNES)                                         :: dummySNES  !!! PETSc 3.3 has no PETSC_NULL_SNES — use local dummy
+      Call MEF90FlowOperator(dummySNES,x,F,FlowCtx,ierr)
       Call MEF90FlowAddStorageToResidual(F,xDot,FlowCtx,ierr)
    End Subroutine MEF90FlowIFunction
 
@@ -242,8 +243,9 @@ Contains
       Type(Mat),Intent(INOUT)                            :: Jac, PreJac
       Type(MEF90FlowCtx_Type),Intent(IN)                 :: FlowCtx
       PetscErrorCode,Intent(OUT)                         :: ierr
+      Type(SNES)                                         :: dummySNES  !!! PETSc 3.3 has no PETSC_NULL_SNES — use local dummy
       !!! First, assemble steady Darcy Jacobian K = dG/dp
-      Call MEF90FlowBilinearForm(PETSC_NULL_SNES,x,Jac,PreJac,1.0_Kr,FlowCtx,ierr)
+      Call MEF90FlowBilinearForm(dummySNES,x,Jac,PreJac,1.0_Kr,FlowCtx,ierr)
       !!! Add a·S·M (mass matrix):  K += a·S·BFB
       Call MEF90FlowAddStorageMassMatrix(Jac,PreJac,a,FlowCtx,ierr)
    End Subroutine MEF90FlowIJacobian
