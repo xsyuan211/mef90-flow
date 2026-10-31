@@ -108,7 +108,7 @@ jobs:
           make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all 2>&1 | tail -10
       - name: Build MEF90 + m_Flow + vDef
         run: |
-          set -e
+          set +e    # 不提前退出,保留完整错误输出
           export PETSC_DIR=$HOME/petsc-3.3-mef90
           export PETSC_ARCH=linux-gcc-openmpi-mef90-O
           export MPI_HOME=$HOME/openmpi-3.1.3
@@ -120,18 +120,30 @@ jobs:
           echo "PETSC_ARCH=$PETSC_ARCH"
           ls $PETSC_DIR/conf/variables
           ls bin/makeversion.sh
+          echo "=== Clean any stale m_Flow artifacts ==="
+          rm -rf objs/${PETSC_ARCH}/m_MEF90_Flow*.o objs/${PETSC_ARCH}/m_mef90_flow*.mod
           echo "=== MEF90 ==="
-          make MEF90 2>&1 | tail -5
+          make MEF90 2>&1 | tee /tmp/build.log | tail -5
           echo "=== m_DefMech ==="
-          make m_DefMech 2>&1 | tail -5
+          make m_DefMech 2>&1 | tee -a /tmp/build.log | tail -5
           echo "=== m_HeatXfer ==="
-          make m_HeatXfer 2>&1 | tail -5
-          echo "=== m_Flow ==="
-          make m_Flow 2>&1 | tail -60
+          make m_HeatXfer 2>&1 | tee -a /tmp/build.log | tail -5
+          echo "=== m_Flow (FULL LOG, no truncation) ==="
+          make m_Flow > /tmp/flow.log 2>&1
+          FLOW_RC=$?
+          echo "m_Flow exit code: $FLOW_RC"
+          cat /tmp/flow.log
+          if [ $FLOW_RC -ne 0 ]; then
+            echo ""
+            echo "=== ERROR SUMMARY (m_Flow) ==="
+            grep -n -i "error\|fatal\|undefined\|no implicit\|cannot open" /tmp/flow.log || echo "(no grep matches)"
+          fi
           echo "=== vDef ==="
-          make vDef 2>&1 | tail -20
-          echo "=== BUILD SUCCESS! ==="
-          ls -la bin/$PETSC_ARCH/vDef
+          make vDef 2>&1 | tee -a /tmp/build.log | tail -30
+          echo "=== FINAL OBJS STATE ==="
+          ls -la objs/${PETSC_ARCH}/m_MEF90_Flow* objs/${PETSC_ARCH}/m_mef90_flow* 2>&1 || echo "(no Flow artifacts yet)"
+          echo "=== BUILD DONE ==="
+          ls -la bin/$PETSC_ARCH/vDef 2>&1 || echo "vDef binary not found"
       - name: Run Terzaghi
         if: always()
         run: |
