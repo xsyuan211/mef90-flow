@@ -48,11 +48,23 @@ jobs:
           # P3: IJacobian — add dummySNES decl + replace PETSC_NULL_OBJECT
           sed -i '/Call MEF90FlowBilinearForm(PETSC_NULL_OBJECT.*1.0_Kr/i\      Type(SNES)                                         :: dummySNES' m_Flow/m_MEF90_FlowAssembly.F90
           sed -i 's/Call MEF90FlowBilinearForm(PETSC_NULL_OBJECT,/Call MEF90FlowBilinearForm(dummySNES,/' m_Flow/m_MEF90_FlowAssembly.F90
+          # P7: Rename param 'ts' → 'tsHandle' (Fortran case-insensitive clashes with Type(TS))
+          sed -i 's/Subroutine MEF90FlowIFunction(ts,/Subroutine MEF90FlowIFunction(tsHandle,/' m_Flow/m_MEF90_FlowAssembly.F90
+          sed -i 's/Subroutine MEF90FlowIJacobian(ts,/Subroutine MEF90FlowIJacobian(tsHandle,/' m_Flow/m_MEF90_FlowAssembly.F90
+          sed -i 's/Type(TS),Intent(IN):: *ts$/Type(TS),Intent(IN) :: tsHandle/' m_Flow/m_MEF90_FlowAssembly.F90
           # ============ m_MEF90_Flow.F90 patches ============
           # P4: Add petsctsdef.h after petscdef.h
           sed -i '/#include "finclude\/petscdef.h"/a #include "finclude/petsctsdef.h"' m_Flow/m_MEF90_Flow.F90
           # P5: Fix wrong module name
           sed -i 's/Use m_MEF90_DefMechCtx\b/Use m_MEF90_DefMechCtx_Type/' m_Flow/m_MEF90_Flow.F90
+          # P8: Rename param 'ts' → 'tsHandle' in wrapper + all 2D/3D dispatch calls
+          sed -i 's/Subroutine MEF90FlowIFunction(ts,/Subroutine MEF90FlowIFunction(tsHandle,/' m_Flow/m_MEF90_Flow.F90
+          sed -i 's/Subroutine MEF90FlowIJacobian(ts,/Subroutine MEF90FlowIJacobian(tsHandle,/' m_Flow/m_MEF90_Flow.F90
+          sed -i 's/Type(TS),Intent(IN):: *ts$/Type(TS),Intent(IN) :: tsHandle/' m_Flow/m_MEF90_Flow.F90
+          sed -i 's/Call MEF90FlowIFunction2D(ts,/Call MEF90FlowIFunction2D(tsHandle,/' m_Flow/m_MEF90_Flow.F90
+          sed -i 's/Call MEF90FlowIFunction3D(ts,/Call MEF90FlowIFunction3D(tsHandle,/' m_Flow/m_MEF90_Flow.F90
+          sed -i 's/Call MEF90FlowIJacobian2D(ts,/Call MEF90FlowIJacobian2D(tsHandle,/' m_Flow/m_MEF90_Flow.F90
+          sed -i 's/Call MEF90FlowIJacobian3D(ts,/Call MEF90FlowIJacobian3D(tsHandle,/' m_Flow/m_MEF90_Flow.F90
           # ============ Makefile patches ============
           # P6: Remove leading '-' from FC lines so errors are visible
           sed -i 's/^-\(@.*\${FC}\)/\1/' m_Flow/Makefile
