@@ -76,6 +76,12 @@ jobs:
           echo "--- Flow.F90 header state AFTER patch ---"
           grep -n '#include\|Use m_MEF90_DefMechCtx' m_Flow/m_MEF90_Flow.F90
           echo ""
+          echo "--- Flow.F90 MODULE header (lines 1-70) — diagnose duplicate symbol ---"
+          sed -n '1,70p' m_Flow/m_MEF90_Flow.F90
+          echo ""
+          echo "--- Flow.F90 around CONTAINS (lines 185-210) ---"
+          sed -n '185,210p' m_Flow/m_MEF90_Flow.F90
+          echo ""
           echo "--- Makefile AFTER patch (FC lines) ---"
           grep -n '\${FC}' m_Flow/Makefile
           echo ""
