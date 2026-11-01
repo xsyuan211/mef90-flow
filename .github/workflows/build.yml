@@ -105,7 +105,7 @@ jobs:
           make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all 2>&1 | tail -10
       - name: Build MEF90 + m_Flow + vDef
         run: |
-          set +e
+          set -euo pipefail
           export PETSC_DIR=$HOME/petsc-3.3-mef90
           export PETSC_ARCH=linux-gcc-openmpi-mef90-O
           export MPI_HOME=$HOME/openmpi-3.1.3
@@ -130,15 +130,15 @@ jobs:
 
           echo ""
           echo "=== 1) BUILD MEF90 (core) ==="
-          make MEF90 2>&1 | tail -3
+          make MEF90 2>&1 | tee /tmp/MEF90.log
 
           echo ""
           echo "=== 2) BUILD m_DefMech ==="
-          make m_DefMech 2>&1 | tail -3
+          make m_DefMech 2>&1 | tee /tmp/m_DefMech.log
 
           echo ""
           echo "=== 3) BUILD m_HeatXfer ==="
-          make m_HeatXfer 2>&1 | tail -3
+          make m_HeatXfer 2>&1 | tee /tmp/m_HeatXfer.log
 
           # ============================================================
           #  PREPROCESSOR DIAGNOSTIC — check if Type(TS) survives -E
@@ -190,7 +190,7 @@ jobs:
           echo ""
           echo "=== 6) BUILD vDef ==="
           if [ -f objs/${PETSC_ARCH}/m_MEF90_Flow.o ]; then
-            make vDef 2>&1 | tee /tmp/vdef.log | tail -30
+            make vDef 2>&1 | tee /tmp/vDef.log
             echo "=== vDef binary ==="
             ls -la bin/$PETSC_ARCH/vDef 2>&1 || echo "  (vDef not found)"
           else
