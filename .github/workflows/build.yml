@@ -25,15 +25,27 @@ jobs:
           find . -type f -name "*.inc" -exec dos2unix -q {} \;
           find . -type f -name "*.h" -exec dos2unix -q {} \;
           chmod +x bin/makeversion.sh
-      - name: Patch Makefile only (F90 files pushed directly)
+      - name: Patch Makefile + DIAGNOSE remote Flow.F90
         run: |
           set -e
-          echo "===== PATCH MAKEFILE ====="
-          # Remove leading '-' from FC lines so errors are visible
+          echo "===== 0) REMOTE Flow.F90 DIAGNOSTIC ====="
+          echo "--- Line count ---"
+          wc -l m_Flow/m_MEF90_Flow.F90
+          echo "--- CONTAINS / EndSub / EndMod locations ---"
+          grep -n "^ *Contains\|^ *End Subroutine\|^ *End Module" m_Flow/m_MEF90_Flow.F90
+          echo "--- Lines 1-35 (header) ---"
+          sed -n '1,35p' m_Flow/m_MEF90_Flow.F90
+          echo "--- Lines 190-200 (CONTAINS zone) ---"
+          sed -n '190,200p' m_Flow/m_MEF90_Flow.F90
+          echo "--- Lines 204-215 (UpdatePerm decl zone) ---"
+          sed -n '204,215p' m_Flow/m_MEF90_Flow.F90
+          echo ""
+          echo "===== 1) PATCH MAKEFILE ====="
           sed -i 's/^-\(@.*\${FC}\)/\1/' m_Flow/Makefile
           sed -i 's/^-\(\${FC}\)/\1/' m_Flow/Makefile
-          echo "--- Makefile FC lines AFTER patch ---"
+          echo "--- Makefile FC lines ---"
           grep -n '\${FC}' m_Flow/Makefile
+          echo ""
           echo "===== PATCH DONE ====="
       - name: Build OpenMPI 3.1.3
         run: |
