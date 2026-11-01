@@ -132,9 +132,20 @@ jobs:
           echo "=== 1) BUILD MEF90 (core) ==="
           make -C objs/${PETSC_ARCH} -f ../../MEF90/Makefile MEF90 PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH MEF90_DIR=$MEF90_DIR 2>&1 | tee /tmp/MEF90.log
 
+          echo "  --- DIAG: MEF90 .o count ---"
+          ls objs/${PETSC_ARCH}/*.o 2>&1 | head -30
+          echo "  count=$(ls objs/${PETSC_ARCH}/*.o 2>/dev/null | wc -l)"
+
+
           echo ""
           echo "=== 2) BUILD m_DefMech ==="
           make -C objs/${PETSC_ARCH} -f ../../m_DefMech/Makefile m_DefMech PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH MEF90_DIR=$MEF90_DIR 2>&1 | tee /tmp/m_DefMech.log
+
+          echo "  --- DIAG: m_DefMech .o count ---"
+          ls objs/${PETSC_ARCH}/*.o 2>&1 | head -30
+          echo "  count=$(ls objs/${PETSC_ARCH}/*.o 2>/dev/null | wc -l)"
+          if [ -f objs/${PETSC_ARCH}/m_MEF90_DefMechCtx.o ]; then echo "  DefMechCtx.o EXISTS"; else echo "  !! DefMechCtx.o MISSING !!"; fi
+
 
           echo ""
           echo "=== 3) BUILD m_HeatXfer ==="
