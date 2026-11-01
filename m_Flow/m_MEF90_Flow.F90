@@ -210,8 +210,8 @@ Contains
       Type(MEF90FlowCellSetOptions_Type),pointer         :: cellOpt
       Type(MEF90_ELEMENT_SCAL),Dimension(:),Pointer     :: elem
       Type(MEF90Element_Type)                             :: elemType
-      Type(IS)                                            :: CellSetGlobalIS, setIS, setIdx
-      PetscInt,dimension(:),Pointer                       :: setID
+      Type(IS)                                            :: CellSetGlobalIS, setIS
+      PetscInt,dimension(:),Pointer                       :: setID, setIdx
       PetscInt                                            :: set, cell
       PetscReal                                           :: damageGauss, vGauss, k_v, k_eff
       PetscReal,Dimension(:),Pointer                      :: dmgPtr
@@ -296,8 +296,8 @@ Contains
 
       Type(MEF90FlowGlobalOptions_Type),pointer          :: gOpt
       Type(MEF90FlowCellSetOptions_Type),pointer         :: cellOpt
-      Type(IS)                                            :: CellSetGlobalIS, setIS, setIdx
-      PetscInt,dimension(:),Pointer                       :: setID
+      Type(IS)                                            :: CellSetGlobalIS, setIS
+      PetscInt,dimension(:),Pointer                       :: setID, setIdx
       PetscInt                                            :: set, cell
       PetscReal                                           :: S_eff
       PetscReal,Dimension(:),Pointer                      :: Sptr
