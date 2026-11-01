@@ -5,8 +5,29 @@ Module m_MEF90_Flow
    Use m_MEF90
    Use m_MEF90_FlowCtx
    Use m_MEF90_DefMechCtx_Type   !!! for MEF90DefMechCtx_Type reference
-   Use m_MEF90_FlowAssembly2D   ! import all 2D wrappers (unique names, no conflict)
-   Use m_MEF90_FlowAssembly3D   ! import all 3D wrappers (unique names, no conflict)
+   !!! Use Only + => rename — 消除 2D/3D Assembly 内部同名函数导致的 Ambiguous reference
+   Use m_MEF90_FlowAssembly2D, Only: &
+        MEF90FlowOperator2D                => MEF90FlowOperator,              &
+        MEF90FlowBilinearForm2D            => MEF90FlowBilinearForm,          &
+        MEF90FlowIFunction2D               => MEF90FlowIFunction,             &
+        MEF90FlowIJacobian2D               => MEF90FlowIJacobian,             &
+        MEF90FlowEnergy2D                  => MEF90FlowEnergy,                &
+        MEF90FlowViewEXO2D                 => MEF90FlowViewEXO,               &
+        MEF90FlowUpdateboundaryPressure2D  => MEF90FlowUpdateboundaryPressure,&
+        MEF90FlowSetTransients2D           => MEF90FlowSetTransients,         &
+        MEF90FlowComputePressureGradient2D => MEF90FlowComputePressureGradient,&
+        MEF90FlowApplyBiotForce2D          => MEF90FlowApplyBiotForce
+   Use m_MEF90_FlowAssembly3D, Only: &
+        MEF90FlowOperator3D                => MEF90FlowOperator,              &
+        MEF90FlowBilinearForm3D            => MEF90FlowBilinearForm,          &
+        MEF90FlowIFunction3D               => MEF90FlowIFunction,             &
+        MEF90FlowIJacobian3D               => MEF90FlowIJacobian,             &
+        MEF90FlowEnergy3D                  => MEF90FlowEnergy,                &
+        MEF90FlowViewEXO3D                 => MEF90FlowViewEXO,               &
+        MEF90FlowUpdateboundaryPressure3D  => MEF90FlowUpdateboundaryPressure,&
+        MEF90FlowSetTransients3D           => MEF90FlowSetTransients,         &
+        MEF90FlowComputePressureGradient3D => MEF90FlowComputePressureGradient,&
+        MEF90FlowApplyBiotForce3D          => MEF90FlowApplyBiotForce
 
    Implicit none
 
