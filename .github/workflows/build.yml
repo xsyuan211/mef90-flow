@@ -124,21 +124,21 @@ jobs:
           ls bin/makeversion.sh
 
           echo ""
-          echo "=== 0) CLEAN stale m_Flow artifacts ==="
-          rm -rf objs/${PETSC_ARCH}/m_MEF90_Flow*.o objs/${PETSC_ARCH}/m_mef90_flow*.mod
-          ls -la objs/${PETSC_ARCH}/m_MEF90_Flow* objs/${PETSC_ARCH}/m_mef90_flow* 2>&1 || echo "  (all cleaned)"
+          echo "=== 0) SETUP dirs + version ==="
+          mkdir -p objs/${PETSC_ARCH} bin/${PETSC_ARCH} lib/${PETSC_ARCH}
+          bin/makeversion.sh ${MEF90_DIR}/mef90version.h
 
           echo ""
           echo "=== 1) BUILD MEF90 (core) ==="
-          make MEF90 2>&1 | tee /tmp/MEF90.log
+          make -C objs/${PETSC_ARCH} -f ../../MEF90/Makefile MEF90 PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH MEF90_DIR=$MEF90_DIR 2>&1 | tee /tmp/MEF90.log
 
           echo ""
           echo "=== 2) BUILD m_DefMech ==="
-          make m_DefMech 2>&1 | tee /tmp/m_DefMech.log
+          make -C objs/${PETSC_ARCH} -f ../../m_DefMech/Makefile m_DefMech PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH MEF90_DIR=$MEF90_DIR 2>&1 | tee /tmp/m_DefMech.log
 
           echo ""
           echo "=== 3) BUILD m_HeatXfer ==="
-          make m_HeatXfer 2>&1 | tee /tmp/m_HeatXfer.log
+          make -C objs/${PETSC_ARCH} -f ../../m_HeatXfer/Makefile m_HeatXfer PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH MEF90_DIR=$MEF90_DIR 2>&1 | tee /tmp/m_HeatXfer.log
 
           # ============================================================
           #  PREPROCESSOR DIAGNOSTIC — check if Type(TS) survives -E
@@ -172,7 +172,7 @@ jobs:
           echo ""
           echo "=== 5) BUILD m_Flow ==="
           rm -f objs/${PETSC_ARCH}/m_MEF90_Flow*.o objs/${PETSC_ARCH}/m_mef90_flow*.mod
-          make m_Flow 2>&1 | tee /tmp/flow.log
+          make -C objs/${PETSC_ARCH} -f ../../m_Flow/Makefile m_Flow PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH MEF90_DIR=$MEF90_DIR 2>&1 | tee /tmp/flow.log
           FLOW_RC=$?
           echo ""
           echo "m_Flow exit code: $FLOW_RC"
@@ -190,7 +190,7 @@ jobs:
           echo ""
           echo "=== 6) BUILD vDef ==="
           if [ -f objs/${PETSC_ARCH}/m_MEF90_Flow.o ]; then
-            make vDef 2>&1 | tee /tmp/vDef.log
+            make -C objs/${PETSC_ARCH} -f ../../vDef/Makefile vDef vDefP vDefUpa vDefBT vDefHF PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH MEF90_DIR=$MEF90_DIR 2>&1 | tee /tmp/vDef.log
             echo "=== vDef binary ==="
             ls -la bin/$PETSC_ARCH/vDef 2>&1 || echo "  (vDef not found)"
           else
