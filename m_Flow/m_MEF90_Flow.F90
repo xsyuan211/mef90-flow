@@ -6,27 +6,27 @@ Module m_MEF90_Flow
    Use m_MEF90_FlowCtx
    Use m_MEF90_DefMechCtx_Type   !!! for MEF90DefMechCtx_Type reference
    Use m_MEF90_FlowAssembly2D, &   !!! NEW: bridge to 2D dimmed assembly template
-      MEF90FlowOperator2D               => MEF90FlowOperator, &
-      MEF90FlowBilinearForm2D           => MEF90FlowBilinearForm, &
-      MEF90FlowIFunction2D              => MEF90FlowIFunction, &
-      MEF90FlowIJacobian2D              => MEF90FlowIJacobian, &
-      MEF90FlowEnergy2D                 => MEF90FlowEnergy, &
-      MEF90FlowViewEXO2D                => MEF90FlowViewEXO, &
-      MEF90FlowUpdateboundaryPressure2D => MEF90FlowUpdateboundaryPressure, &
-      MEF90FlowSetTransients2D          => MEF90FlowSetTransients, &
-      MEF90FlowComputePressureGradient2D => MEF90FlowComputePressureGradient, &
-      MEF90FlowApplyBiotForce2D         => MEF90FlowApplyBiotForce
+      MEF90FlowOperator2D,                &
+      MEF90FlowBilinearForm2D,            &
+      MEF90FlowIFunction2D,               &
+      MEF90FlowIJacobian2D,               &
+      MEF90FlowEnergy2D,                  &
+      MEF90FlowViewEXO2D,                 &
+      MEF90FlowUpdateboundaryPressure2D,  &
+      MEF90FlowSetTransients2D,           &
+      MEF90FlowComputePressureGradient2D, &
+      MEF90FlowApplyBiotForce2D
    Use m_MEF90_FlowAssembly3D, &   !!! NEW: bridge to 3D dimmed assembly template
-      MEF90FlowOperator3D               => MEF90FlowOperator, &
-      MEF90FlowBilinearForm3D           => MEF90FlowBilinearForm, &
-      MEF90FlowIFunction3D              => MEF90FlowIFunction, &
-      MEF90FlowIJacobian3D              => MEF90FlowIJacobian, &
-      MEF90FlowEnergy3D                 => MEF90FlowEnergy, &
-      MEF90FlowViewEXO3D                => MEF90FlowViewEXO, &
-      MEF90FlowUpdateboundaryPressure3D => MEF90FlowUpdateboundaryPressure, &
-      MEF90FlowSetTransients3D          => MEF90FlowSetTransients, &
-      MEF90FlowComputePressureGradient3D => MEF90FlowComputePressureGradient, &
-      MEF90FlowApplyBiotForce3D         => MEF90FlowApplyBiotForce
+      MEF90FlowOperator3D,                &
+      MEF90FlowBilinearForm3D,            &
+      MEF90FlowIFunction3D,               &
+      MEF90FlowIJacobian3D,               &
+      MEF90FlowEnergy3D,                  &
+      MEF90FlowViewEXO3D,                 &
+      MEF90FlowUpdateboundaryPressure3D,  &
+      MEF90FlowSetTransients3D,           &
+      MEF90FlowComputePressureGradient3D, &
+      MEF90FlowApplyBiotForce3D
 
    Implicit none
 
@@ -55,6 +55,8 @@ Module m_MEF90_Flow
 !!! --------------------------------------------------------------------------------
 !!!  Wrapper functions — dispatch 2D vs 3D based on mesh dimension (HeatXfer pattern)
 !!! --------------------------------------------------------------------------------
+
+Contains
 
 #undef __FUNCT__
 #define __FUNCT__ "MEF90FlowOperator"
@@ -190,8 +192,6 @@ Module m_MEF90_Flow
          Call MEF90FlowSetTransients3D(FlowCtx,step,timeVal,ierr)
       End If
    End Subroutine MEF90FlowSetTransients
-
-Contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!  Update permeability field from damage field and global options
