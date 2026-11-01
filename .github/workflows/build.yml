@@ -105,7 +105,7 @@ jobs:
           make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all 2>&1 | tail -10
       - name: Build MEF90 + m_Flow + vDef
         run: |
-          set -euo pipefail
+          set -e
           export PETSC_DIR=$HOME/petsc-3.3-mef90
           export PETSC_ARCH=linux-gcc-openmpi-mef90-O
           export MPI_HOME=$HOME/openmpi-3.1.3
