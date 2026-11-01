@@ -17,12 +17,15 @@ test3D: ${MEF90_DIR}/bin/${PETSC_ARCH}/vDef
 include ${PETSC_DIR}/conf/variables
 FC_FLAGS += -fallow-argument-mismatch
 include ${PETSC_DIR}/conf/rules
+
 include ${MEF90_DIR}/Makefile.include
 include ${MEF90_DIR}/MEF90/Makefile.include
 include ${MEF90_DIR}/m_HeatXfer/Makefile.include
 include ${MEF90_DIR}/m_DefMech/Makefile.include
 include ${MEF90_DIR}/m_Flow/Makefile.include
-# Also include m_Flow/Makefile for compile rules (not just OBJS paths)
+# Also include submodule Makefiles for compile rules (not just OBJS paths)
+include ${MEF90_DIR}/m_DefMech/Makefile
+include ${MEF90_DIR}/m_HeatXfer/Makefile
 include ${MEF90_DIR}/m_Flow/Makefile
 BASE_DIR=${MEF90_DIR}/vDef
 
