@@ -15,8 +15,8 @@ test3D: ${MEF90_DIR}/bin/${PETSC_ARCH}/vDef
 	#make -s testvDef PREFIX=Beam1x10-tetra10 OPTIONSFILE=$${OPTIONSFILE};\
 
 include ${PETSC_DIR}/conf/variables
+FC_FLAGS += -fallow-argument-mismatch
 include ${PETSC_DIR}/conf/rules
-
 include ${MEF90_DIR}/Makefile.include
 include ${MEF90_DIR}/MEF90/Makefile.include
 include ${MEF90_DIR}/m_HeatXfer/Makefile.include
