@@ -5,28 +5,8 @@ Module m_MEF90_Flow
    Use m_MEF90
    Use m_MEF90_FlowCtx
    Use m_MEF90_DefMechCtx_Type   !!! for MEF90DefMechCtx_Type reference
-   Use m_MEF90_FlowAssembly2D, &   !!! NEW: bridge to 2D dimmed assembly template
-      MEF90FlowOperator2D,                &
-      MEF90FlowBilinearForm2D,            &
-      MEF90FlowIFunction2D,               &
-      MEF90FlowIJacobian2D,               &
-      MEF90FlowEnergy2D,                  &
-      MEF90FlowViewEXO2D,                 &
-      MEF90FlowUpdateboundaryPressure2D,  &
-      MEF90FlowSetTransients2D,           &
-      MEF90FlowComputePressureGradient2D, &
-      MEF90FlowApplyBiotForce2D
-   Use m_MEF90_FlowAssembly3D, &   !!! NEW: bridge to 3D dimmed assembly template
-      MEF90FlowOperator3D,                &
-      MEF90FlowBilinearForm3D,            &
-      MEF90FlowIFunction3D,               &
-      MEF90FlowIJacobian3D,               &
-      MEF90FlowEnergy3D,                  &
-      MEF90FlowViewEXO3D,                 &
-      MEF90FlowUpdateboundaryPressure3D,  &
-      MEF90FlowSetTransients3D,           &
-      MEF90FlowComputePressureGradient3D, &
-      MEF90FlowApplyBiotForce3D
+   Use m_MEF90_FlowAssembly2D   ! import all 2D wrappers (unique names, no conflict)
+   Use m_MEF90_FlowAssembly3D   ! import all 3D wrappers (unique names, no conflict)
 
    Implicit none
 
@@ -254,7 +234,7 @@ Contains
                End Do
                vGauss = vGauss + elem(cell)%Gauss_C(iGauss) * damageGauss
             End Do
-            vGauss = vGauss / elem(cell)%volume
+            vGauss = vGauss / sum(elem(cell)%Gauss_C)
 
             !!! Apply residual damage floor
             If (vGauss < gOpt%residualDamage) vGauss = gOpt%residualDamage
@@ -357,7 +337,7 @@ Contains
            MEF90FlowBilinearForm,FlowCtx,ierr);CHKERRQ(ierr)
       Call SNESSetFunction(SNESPressure,residual,MEF90FlowOperator,FlowCtx,ierr);CHKERRQ(ierr)
       Call SNESSetConvergence(SNESPressure,gOpt%pressureRTol,gOpt%pressureATol, &
-           PETSC_DEFAULT_REAL,gOpt%pressureMaxIt,ierr);CHKERRQ(ierr)
+           -1.0_Kr,gOpt%pressureMaxIt,ierr);CHKERRQ(ierr)
       Call PetscObjectSetName(SNESPressure,"SNESPressure",ierr);CHKERRQ(ierr)
    End Subroutine MEF90FlowCreateSNES
 
