@@ -2,6 +2,7 @@ MEF90_DIM=2
 all:
 	@make -C ${MEF90_DIR} m_Flow
 include ${PETSC_DIR}/conf/variables
+FC_FLAGS += -fallow-argument-mismatch
 include ${PETSC_DIR}/conf/rules
 include ${MEF90_DIR}/Makefile.include
 include ${MEF90_DIR}/MEF90/Makefile.include
