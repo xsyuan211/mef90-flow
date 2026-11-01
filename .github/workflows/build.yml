@@ -25,66 +25,15 @@ jobs:
           find . -type f -name "*.inc" -exec dos2unix -q {} \;
           find . -type f -name "*.h" -exec dos2unix -q {} \;
           chmod +x bin/makeversion.sh
-      - name: Patch sources + Makefile (one-shot)
+      - name: Patch Makefile only (F90 files pushed directly)
         run: |
           set -e
-          echo "===== PATCH STEP ====="
-          echo ""
-          echo "--- FlowAssembly.F90 header state BEFORE patch ---"
-          grep -n '#include\|Use m_MEF90_DefMechCtx' m_Flow/m_MEF90_FlowAssembly.F90
-          echo ""
-          echo "--- Flow.F90 header state BEFORE patch ---"
-          grep -n '#include\|Use m_MEF90_DefMechCtx' m_Flow/m_MEF90_Flow.F90
-          echo ""
-          echo "--- Makefile BEFORE patch (FC lines) ---"
-          grep -n '\${FC}' m_Flow/Makefile
-          echo ""
-          # ============ m_MEF90_FlowAssembly.F90 patches ============
-          # P1: Add petsctsdef.h after petscbagdef.h
-          sed -i '/#include "finclude\/petscbagdef.h"/a #include "finclude/petsctsdef.h"' m_Flow/m_MEF90_FlowAssembly.F90
-          # P2: IFunction — add dummySNES decl + replace PETSC_NULL_OBJECT
-          sed -i '/Call MEF90FlowOperator(PETSC_NULL_OBJECT/i\      Type(SNES)                                         :: dummySNES' m_Flow/m_MEF90_FlowAssembly.F90
-          sed -i 's/Call MEF90FlowOperator(PETSC_NULL_OBJECT/Call MEF90FlowOperator(dummySNES/' m_Flow/m_MEF90_FlowAssembly.F90
-          # P3: IJacobian — add dummySNES decl + replace PETSC_NULL_OBJECT
-          sed -i '/Call MEF90FlowBilinearForm(PETSC_NULL_OBJECT.*1.0_Kr/i\      Type(SNES)                                         :: dummySNES' m_Flow/m_MEF90_FlowAssembly.F90
-          sed -i 's/Call MEF90FlowBilinearForm(PETSC_NULL_OBJECT,/Call MEF90FlowBilinearForm(dummySNES,/' m_Flow/m_MEF90_FlowAssembly.F90
-          # P7: Rename param 'ts' → 'tsHandle' (Fortran case-insensitive clashes with Type(TS))
-          sed -i 's/Subroutine MEF90FlowIFunction(ts,/Subroutine MEF90FlowIFunction(tsHandle,/' m_Flow/m_MEF90_FlowAssembly.F90
-          sed -i 's/Subroutine MEF90FlowIJacobian(ts,/Subroutine MEF90FlowIJacobian(tsHandle,/' m_Flow/m_MEF90_FlowAssembly.F90
-          sed -i 's/Type(TS),Intent(IN):: *ts$/Type(TS),Intent(IN) :: tsHandle/' m_Flow/m_MEF90_FlowAssembly.F90
-          # ============ m_MEF90_Flow.F90 patches ============
-          # P4: Add petsctsdef.h after petscdef.h
-          sed -i '/#include "finclude\/petscdef.h"/a #include "finclude/petsctsdef.h"' m_Flow/m_MEF90_Flow.F90
-          # P5: Fix wrong module name
-          sed -i 's/Use m_MEF90_DefMechCtx\b/Use m_MEF90_DefMechCtx_Type/' m_Flow/m_MEF90_Flow.F90
-          # P8: Rename param 'ts' → 'tsHandle' in wrapper + all 2D/3D dispatch calls
-          sed -i 's/Subroutine MEF90FlowIFunction(ts,/Subroutine MEF90FlowIFunction(tsHandle,/' m_Flow/m_MEF90_Flow.F90
-          sed -i 's/Subroutine MEF90FlowIJacobian(ts,/Subroutine MEF90FlowIJacobian(tsHandle,/' m_Flow/m_MEF90_Flow.F90
-          sed -i 's/Type(TS),Intent(IN):: *ts$/Type(TS),Intent(IN) :: tsHandle/' m_Flow/m_MEF90_Flow.F90
-          sed -i 's/Call MEF90FlowIFunction2D(ts,/Call MEF90FlowIFunction2D(tsHandle,/' m_Flow/m_MEF90_Flow.F90
-          sed -i 's/Call MEF90FlowIFunction3D(ts,/Call MEF90FlowIFunction3D(tsHandle,/' m_Flow/m_MEF90_Flow.F90
-          sed -i 's/Call MEF90FlowIJacobian2D(ts,/Call MEF90FlowIJacobian2D(tsHandle,/' m_Flow/m_MEF90_Flow.F90
-          sed -i 's/Call MEF90FlowIJacobian3D(ts,/Call MEF90FlowIJacobian3D(tsHandle,/' m_Flow/m_MEF90_Flow.F90
-          # ============ Makefile patches ============
-          # P6: Remove leading '-' from FC lines so errors are visible
+          echo "===== PATCH MAKEFILE ====="
+          # Remove leading '-' from FC lines so errors are visible
           sed -i 's/^-\(@.*\${FC}\)/\1/' m_Flow/Makefile
           sed -i 's/^-\(\${FC}\)/\1/' m_Flow/Makefile
-          echo ""
-          echo "--- FlowAssembly.F90 header state AFTER patch ---"
-          grep -n '#include\|Use m_MEF90_DefMechCtx\|dummySNES' m_Flow/m_MEF90_FlowAssembly.F90
-          echo ""
-          echo "--- Flow.F90 header state AFTER patch ---"
-          grep -n '#include\|Use m_MEF90_DefMechCtx' m_Flow/m_MEF90_Flow.F90
-          echo ""
-          echo "--- Flow.F90 MODULE header (lines 1-70) — diagnose duplicate symbol ---"
-          sed -n '1,70p' m_Flow/m_MEF90_Flow.F90
-          echo ""
-          echo "--- Flow.F90 around CONTAINS (lines 185-210) ---"
-          sed -n '185,210p' m_Flow/m_MEF90_Flow.F90
-          echo ""
-          echo "--- Makefile AFTER patch (FC lines) ---"
+          echo "--- Makefile FC lines AFTER patch ---"
           grep -n '\${FC}' m_Flow/Makefile
-          echo ""
           echo "===== PATCH DONE ====="
       - name: Build OpenMPI 3.1.3
         run: |
