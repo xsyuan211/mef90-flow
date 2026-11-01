@@ -147,17 +147,17 @@ module m_vDefDefault
                                                          PETSC_FALSE,   & ! Has BC
                                                          0.0_Kr)          ! boundaryTemp
 
-!!! NEW: Flow (Darcy pressure) default options — Phase 1
+!!! NEW: Flow (Darcy pressure) default options -- Phase 1
    Type(MEF90FlowGlobalOptions_Type),Parameter    :: vDefFlowDefaultGlobalOptions = MEF90FlowGlobalOptions_Type( &
                                                          MEF90Flow_timeSteppingTypeSteadyState, & ! timeSteppingType (steady Darcy)
                                                          PETSC_FALSE,    & ! addNullSpace
                                                          1.0e-20_Kr,     & ! permeabilityMin  (k_min, 1e-20 m^2 ~ 10 mD)
                                                          1.0e-14_Kr,     & ! permeabilityMax  (k_max, 1e-14 m^2 ~ 1000 D)
-                                                         1.0e-3_Kr,      & ! dynamicViscosity (mu, water at 20°C)
-                                                         4.6e-10_Kr,     & ! storativity S = (1/Kf + φ/Ks) ~ 4.6e-10 Pa^-1
+                                                         1.0e-3_Kr,      & ! dynamicViscosity (mu, water at 20degC)
+                                                         4.6e-10_Kr,     & ! storativity S = (1/Kf + mu/Ks) ~ 4.6e-10 Pa^-1
                                                          0.0_Kr,         & ! initialPressure p0
-                                                         0.0_Kr,         & ! residualDamage (damage < this → k = k_min only)
-                                                         0.0_Kr,         & ! biotCoefficient α (0 = no Biot coupling, set 1.0 for full poroelasticity)
+                                                         0.0_Kr,         & ! residualDamage (damage < this -> k = k_min only)
+                                                         0.0_Kr,         & ! biotCoefficient alpha (0 = no Biot coupling, set 1.0 for full poroelasticity)
                                                          1,              & ! pressureOffset (EXO)
                                                          1,              & ! sourceOffset
                                                          0,              & ! boundaryPressureOffset
