@@ -14,8 +14,8 @@ module m_vDefDefault
                                                          1,                             & ! verbose
                                                          PETSC_FALSE,                   & ! validate
                                                          MEF90TimeInterpolation_linear, & ! timeInterpolation
-                                                         0.0d0,                        & ! timeMin
-                                                         1.0d0,                        & ! timeMax
+                                                         0.0e0_8,                        & ! timeMin
+                                                         1.0e0_8,                        & ! timeMax
                                                          11,                            & ! timeNumStep
                                                          0,                             & ! timeSkip
                                                          1,                             & ! numCycle
@@ -46,7 +46,7 @@ module m_vDefDefault
                                                          1e-3,                    & ! damage_atol
                                                          1000,                    & ! maxit
                                                          10,                      & ! PCLag
-                                                         1.0d0,                  & ! SOROmega
+                                                         1.0e0_8,                  & ! SOROmega
                                                          0.,                      & ! irrevThres 
                                                          MEF90DefMech_BTTypeNULL, & ! BTType
                                                          -1,                      & ! BTInt
@@ -54,8 +54,8 @@ module m_vDefDefault
                                                          1.0e-2,                  & ! BTTol
                                                          1.0e-4,                  & ! plasticStrainAtol
                                                          1.0e-3,                  & ! InjectedVolumeAtol
-                                                         0.0d0,                  & ! dampingCoefficientDisplacement
-                                                         0.0d0)                    ! dampingCoefficientDamage
+                                                         0.0e0_8,                  & ! dampingCoefficientDisplacement
+                                                         0.0e0_8)                    ! dampingCoefficientDamage
 
    Type(MEF90DefMechGlobalOptions_Type),Parameter     :: vDefDefMechDefaultGlobalOptions3D = MEF90DefMechGlobalOptions_Type( &
                                                          MEF90DefMech_TimeSteppingTypeQuasiStatic, & ! solverType
@@ -82,7 +82,7 @@ module m_vDefDefault
                                                          1e-4,                    & ! damage_atol
                                                          1000,                    & ! maxit
                                                          10,                      & ! PCLag
-                                                         1.0d0,                  & ! SOROmega
+                                                         1.0e0_8,                  & ! SOROmega
                                                          0.,                      & ! irrevThres 
                                                          MEF90DefMech_BTTypeNULL, & ! BTType
                                                          -1,                      & ! BTInt
@@ -90,38 +90,38 @@ module m_vDefDefault
                                                          1.0e-2,                  & ! BTTol
                                                          1.0e-4,                  & ! plasticStrainAtol
                                                          1.0e-3,                  & ! InjectedVolumeAtol
-                                                         0.0d0,                  & ! dampingCoefficientDisplacement
-                                                         0.0d0)                    ! dampingCoefficientDamage
+                                                         0.0e0_8,                  & ! dampingCoefficientDisplacement
+                                                         0.0e0_8)                    ! dampingCoefficientDamage
 
    Type(MEF90DefMechCellSetOptions_Type),Parameter    :: vDefDefMechDefaultCellSetOptions = MEF90DefMechCellSetOptions_Type( &
                                                          -1,                                                & ! elemTypeShortIDDispl will be overriden
                                                          -1,                                                & ! elemTypeShortIDDamage will be overriden
-                                                         [0.0d0,0.0d0,0.0d0],                            & ! force
-                                                         0.0d0,                                            & ! pressureForce
-                                                         0.0d0,                                            & ! CrackPressure
+                                                         [0.0e0_8,0.0e0_8,0.0e0_8],                            & ! force
+                                                         0.0e0_8,                                            & ! pressureForce
+                                                         0.0e0_8,                                            & ! CrackPressure
                                                          MEF90DefMech_damageTypeAT1,                        & ! damageType
                                                          MEF90DefMech_plasticityTypeNone,                   & ! plasticityType
                                                          MEF90DefMech_unilateralContactTypeNone,            & ! unilateralContactType
-                                                         1.0D-5,                                            & ! unilateralContactHydrostatocDeviatoricGamma
+                                                         1.0e-5_8,                                            & ! unilateralContactHydrostatocDeviatoricGamma
                                                          PETSC_FALSE,                                       & ! unilateralContactHybrid
-                                                         1.0d0,                                            & ! DamageATLinSoftk
-                                                         1.25d0,                                           & ! DamageAT1expb
+                                                         1.0e0_8,                                            & ! DamageATLinSoftk
+                                                         1.25e0_8,                                           & ! DamageAT1expb
                                                          MEF90DefMech_drivingForceTypeNone,                 & ! drivingForceType
                                                          [PETSC_FALSE,PETSC_FALSE,PETSC_FALSE],             & ! Has Displacement BC
-                                                         [0.0d0,0.0d0,0.0d0],                            & ! boundary Displacement
+                                                         [0.0e0_8,0.0e0_8,0.0e0_8],                            & ! boundary Displacement
                                                          [MEF90_NINFINITY,MEF90_NINFINITY,MEF90_NINFINITY], & ! displacement Lower Bound
                                                          [MEF90_INFINITY,MEF90_INFINITY,MEF90_INFINITY],    & ! displacement Upper Bound
                                                          PETSC_FALSE,                                       & ! Has Damage BC
                                                          PETSC_FALSE,                                       & ! CrackVolumeControlled
                                                          PETSC_FALSE,                                       & ! WorkControlled
-                                                         0.d0)                                               ! Boundary Damage
+                                                         0.0e0_8)                                               ! Boundary Damage
    Type(MEF90DefMechVertexSetOptions_Type),Parameter  :: vDefDefMechDefaultVertexSetOptions = MEF90DefMechVertexSetOptions_Type( &
                                                          [PETSC_FALSE,PETSC_FALSE,PETSC_FALSE],             & ! Has Displacement BC
-                                                         [0.0d0,0.0d0,0.0d0],                            & ! boundary Displacement
+                                                         [0.0e0_8,0.0e0_8,0.0e0_8],                            & ! boundary Displacement
                                                          [MEF90_NINFINITY,MEF90_NINFINITY,MEF90_NINFINITY], & ! displacement Lower Bound
                                                          [MEF90_INFINITY,MEF90_INFINITY,MEF90_INFINITY],    & ! displacement Upper Bound
                                                          PETSC_FALSE,                                       & ! Has Damage BC
-                                                         0.0d0)                                              ! boundary Damage
+                                                         0.0e0_8)                                              ! boundary Damage
 
    Type(MEF90HeatXferGlobalOptions_Type),Parameter    :: vDefHeatXferDefaultGlobalOptions = MEF90HeatXferGlobalOptions_Type( &
                                                          MEF90HeatXFer_timeSteppingTypeSteadyState, & ! timeSteppingType
@@ -136,29 +136,29 @@ module m_vDefDefault
                                                          1)                     ! fluxOffset
    Type(MEF90HeatXferCellSetOptions_Type),Parameter   :: vDefHeatXferDefaultCellSetOptions = MEF90HeatXferCellSetOptions_Type( &
                                                          -1,                   & ! elemTypeShortID will be overriden
-                                                         0.0d0,               & ! flux
-                                                         0.0d0,               & ! surfaceThermalConductivity
-                                                         0.0d0,               & ! externalTemp
+                                                         0.0e0_8,               & ! flux
+                                                         0.0e0_8,               & ! surfaceThermalConductivity
+                                                         0.0e0_8,               & ! externalTemp
                                                          PETSC_FALSE,          & ! Has BC
-                                                         0.0d0,               & ! boundaryTemp
-                                                         [0.0d0,0.0d0,0.0d0]) ! advectionVelocity
+                                                         0.0e0_8,               & ! boundaryTemp
+                                                         [0.0e0_8,0.0e0_8,0.0e0_8]) ! advectionVelocity
                                                          
    Type(MEF90HeatXferVertexSetOptions_Type),Parameter :: vDefHeatXferDefaultVertexSetOptions = MEF90HeatXferVertexSetOptions_Type( &
                                                          PETSC_FALSE,   & ! Has BC
-                                                         0.0d0)          ! boundaryTemp
+                                                         0.0e0_8)          ! boundaryTemp
 
 !!! NEW: Flow (Darcy pressure) default options -- Phase 1
    Type(MEF90FlowGlobalOptions_Type),Parameter    :: vDefFlowDefaultGlobalOptions = MEF90FlowGlobalOptions_Type( &
                                                          MEF90Flow_timeSteppingTypeSteadyState, & ! timeSteppingType (steady Darcy)
                                                          PETSC_FALSE,    & ! addNullSpace
-                                                         1.0d-20,     & ! permeabilityMin  (k_min, 1e-20 m^2 ~ 10 mD)
-                                                         1.0d-14,     & ! permeabilityMax  (k_max, 1e-14 m^2 ~ 1000 D)
-                                                         1.0d-3,      & ! dynamicViscosity (mu, water at 20degC)
-                                                         4.6d-10,     & ! storativity S = (1/Kf + mu/Ks) ~ 4.6e-10 Pa^-1
-                                                         0.0d0,         & ! initialPressure p0
-                                                         0.0d0,         & ! residualDamage (damage < this -> k = k_min only)
-                                                         0.0d0,         & ! biotCoefficient alpha (0 = no Biot coupling, set 1.0 for full poroelasticity)
-                                                         1,              & ! pressureOffset (EXO)
+                                                         1.0e-20_8,     & ! permeabilityMin
+                                                         1.0e-14_8,     & ! permeabilityMax
+                                                         1.0e-3_8,      & ! dynamicViscosity
+                                                         4.6e-10_8,     & ! storativity S
+                                                         0.0e0_8,         & ! initialPressure p0
+                                                         0.0e0_8,         & ! residualDamage
+                                                         0.0e0_8,         & ! biotCoefficient
+                                                         1,              & ! pressureOffset
                                                          1,              & ! sourceOffset
                                                          0,              & ! boundaryPressureOffset
                                                          2,              & ! pressurePreviousStepOffset
@@ -166,19 +166,19 @@ module m_vDefDefault
                                                          MEF90Scaling_CST, & ! boundaryPressureScaling
                                                          MEF90Scaling_Linear, & ! pressurePreviousStepScaling
                                                          MEF90Scaling_CST,    & ! pressureScaling
-                                                         1d-8,        & ! pressureATol
-                                                         1d-4,        & ! pressureRTol
+                                                         1e-8_8,        & ! pressureATol
+                                                         1e-4_8,        & ! pressureRTol
                                                          100)             & ! pressureMaxIt
    Type(MEF90FlowCellSetOptions_Type),Parameter   :: vDefFlowDefaultCellSetOptions = MEF90FlowCellSetOptions_Type( &
                                                          -1,              & ! elemTypeShortID (overridden)
-                                                         0.0d0,          & ! source (volumetric injection/sink)
-                                                         0.0d0,          & ! permeabilityOverride (0 = use global)
-                                                         -1.0d0,         & ! storativityOverride (-1 = use global)
+                                                         0.0e0_8,          & ! source (volumetric injection/sink)
+                                                         0.0e0_8,          & ! permeabilityOverride (0 = use global)
+                                                         -1.0e0_8,         & ! storativityOverride (-1 = use global)
                                                          PETSC_FALSE,     & ! Has BC
-                                                         0.0d0,          & ! boundaryPressure
-                                                         [0.0d0,0.0d0,0.0d0]) ! advectionVector (gravity)
-   Type(MEF90FlowVertexSetOptions_Type),Parameter :: vDefFlowDefaultVertexSetOptions = MEF90FlowVertexSetOptions_Type( &
+                                                         0.0e0_8,          & ! boundaryPressure
+                                                         [0.0e0_8,0.0e0_8,0.0e0_8]) ! advectionVector (gravity)
+   Type(MEF90FlowVertexSetOptions_Type),Parameter :: vDefFlowDefaultVertexSetOptions_Type( &
                                                          PETSC_FALSE,     & ! Has BC
-                                                         0.0d0)          & ! boundaryPressure
+                                                         0.0e0_8)          & ! boundaryPressure
 
 end module m_vDefDefault
