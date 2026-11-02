@@ -151,6 +151,7 @@ module m_vDefDefault
 !!! NEW: Flow (Darcy pressure) default options -- Phase 1
    Type(MEF90FlowGlobalOptions_Type),Parameter    :: vDefFlowDefaultGlobalOptions = MEF90FlowGlobalOptions_Type( &
                                                          MEF90Flow_timeSteppingTypeSteadyState, & ! timeSteppingType (steady Darcy)
+                                                          PETSC_FALSE,          & ! addNullSpace
                                                          1.0e-20_Kr,     & ! permeabilityMin  (k_min, 1e-20 m^2 ~ 10 mD)
                                                          1.0e-14_Kr,     & ! permeabilityMax  (k_max, 1e-14 m^2 ~ 1000 D)
                                                          1.0e-3_Kr,      & ! dynamicViscosity (mu, water at 20degC)
