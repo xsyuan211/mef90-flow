@@ -151,10 +151,10 @@ module m_vDefDefault
    Type(MEF90FlowGlobalOptions_Type),Parameter    :: vDefFlowDefaultGlobalOptions = MEF90FlowGlobalOptions_Type( &
                                                          MEF90Flow_timeSteppingTypeSteadyState, & ! timeSteppingType (steady Darcy)
                                                          PETSC_FALSE,    & ! addNullSpace
-                                                         1.0e-20d0,     & ! permeabilityMin  (k_min, 1e-20 m^2 ~ 10 mD)
-                                                         1.0e-14d0,     & ! permeabilityMax  (k_max, 1e-14 m^2 ~ 1000 D)
-                                                         1.0e-3d0,      & ! dynamicViscosity (mu, water at 20degC)
-                                                         4.6e-10d0,     & ! storativity S = (1/Kf + mu/Ks) ~ 4.6e-10 Pa^-1
+                                                         1.0d-20,     & ! permeabilityMin  (k_min, 1e-20 m^2 ~ 10 mD)
+                                                         1.0d-14,     & ! permeabilityMax  (k_max, 1e-14 m^2 ~ 1000 D)
+                                                         1.0d-3,      & ! dynamicViscosity (mu, water at 20degC)
+                                                         4.6d-10,     & ! storativity S = (1/Kf + mu/Ks) ~ 4.6e-10 Pa^-1
                                                          0.0d0,         & ! initialPressure p0
                                                          0.0d0,         & ! residualDamage (damage < this -> k = k_min only)
                                                          0.0d0,         & ! biotCoefficient alpha (0 = no Biot coupling, set 1.0 for full poroelasticity)
@@ -166,8 +166,8 @@ module m_vDefDefault
                                                          MEF90Scaling_CST, & ! boundaryPressureScaling
                                                          MEF90Scaling_Linear, & ! pressurePreviousStepScaling
                                                          MEF90Scaling_CST,    & ! pressureScaling
-                                                         1e-8d0,        & ! pressureATol
-                                                         1e-4d0,        & ! pressureRTol
+                                                         1d-8,        & ! pressureATol
+                                                         1d-4,        & ! pressureRTol
                                                          100)             & ! pressureMaxIt
    Type(MEF90FlowCellSetOptions_Type),Parameter   :: vDefFlowDefaultCellSetOptions = MEF90FlowCellSetOptions_Type( &
                                                          -1,              & ! elemTypeShortID (overridden)
