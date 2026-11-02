@@ -113,15 +113,32 @@ jobs:
           ls $PETSC_DIR/conf/variables
           ls $PETSC_ARCH/conf/petscrules 2>&1 || echo "!! NO petscrules !!"
 
-      - name: Fix CRLF + permissions
+      - name: Fix CRLF + Patch Makefiles
         run: |
+          # Fix line endings
           find . -type f -name "*.sh" -exec dos2unix -q {} +
           find . -type f -name "Makefile" -exec dos2unix -q {} +
           find . -type f -name "*.F90" -exec dos2unix -q {} +
           find . -type f -name "*.inc" -exec dos2unix -q {} +
           find . -type f -name "*.h" -exec dos2unix -q {} +
           chmod +x bin/makeversion.sh
-
+          echo ""
+          echo "===== PATCH MAKEFILES: remove - prefix (Fake Green fix) ====="
+          for mf in MEF90/Makefile m_DefMech/Makefile m_Flow/Makefile vDef/Makefile; do
+            if [ -f "$mf" ]; then
+              echo "Patching $mf ..."
+              sed -i 's/-@${FC}/${FC}/g' "$mf"
+              sed -i 's/-@${FLINKER}/${FLINKER}/g' "$mf"
+            fi
+          done
+          echo ""
+          echo "=== VERIFY patched Makefiles ==="
+          for mf in MEF90/Makefile m_DefMech/Makefile m_Flow/Makefile vDef/Makefile; do
+            if [ -f "$mf" ]; then
+              echo "--- $mf ---"
+              grep -n '${FC}\|${FLINKER}' "$mf" | head -3
+            fi
+          done
       - name: Build MEF90 + m_Flow + vDef
         run: |
           set -eo pipefail
