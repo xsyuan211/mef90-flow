@@ -115,11 +115,11 @@ jobs:
 
       - name: Fix CRLF + permissions
         run: |
-          find . -type f -name "*.sh" -exec dos2unix -q {} \
-          find . -type f -name "Makefile" -exec dos2unix -q {} \
-          find . -type f -name "*.F90" -exec dos2unix -q {} \
-          find . -type f -name "*.inc" -exec dos2unix -q {} \
-          find . -type f -name "*.h" -exec dos2unix -q {} \
+          find . -type f -name "*.sh" -exec dos2unix -q {} {} +
+          find . -type f -name "Makefile" -exec dos2unix -q {} {} +
+          find . -type f -name "*.F90" -exec dos2unix -q {} {} +
+          find . -type f -name "*.inc" -exec dos2unix -q {} {} +
+          find . -type f -name "*.h" -exec dos2unix -q {} {} +
           chmod +x bin/makeversion.sh
 
       - name: Build MEF90 + m_Flow + vDef
