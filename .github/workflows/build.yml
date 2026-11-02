@@ -83,7 +83,7 @@ jobs:
           echo "=== Configure ==="
           $PY27 ./configure \
             COPTFLAGS='-O3' CXXOPTFLAGS='-O3' FOPTFLAGS='-O3' \
-            FFLAGS='-Wno-aliasing -ffree-line-length-none' \
+            FFLAGS='-Wno-aliasing -ffree-line-length-none -fallow-argument-mismatch -Wno-all' \
             --download-hdf5=$HOME/petsc-dl/hdf5-1.10.6.tar.gz \
             --download-netcdf=$HOME/petsc-dl/netcdf-v4.8.1.tar.gz \
             --download-exodusii=$HOME/petsc-dl/exodusii-2021-01-20.tar.gz \
