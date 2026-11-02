@@ -3,6 +3,7 @@ module m_vDefDefault
 #include <finclude/petscdef.h>
    Use petsc
    Use m_MEF90
+   Use m_MEF90_Parameters
    Use m_MEF90_DefMechCtx
    Use m_MEF90_HeatXferCtx
    Use m_MEF90_FlowCtx   !!! NEW
