@@ -137,7 +137,7 @@ jobs:
           export PATH=$MPI_HOME/bin:$PETSC_DIR/bin:$PETSC_DIR/$PETSC_ARCH/bin:$PATH
           export MEF90_DIR=$(pwd)
           # FC_FLAGS != FCFLAGS — Makefile uses FC_FLAGS
-          export FC_FLAGS="-fallow-argument-mismatch"
+          export FC_FLAGS="-fallow-argument-mismatch -ffree-line-length-none -Wno-error"
           export FCFLAGS="-fallow-argument-mismatch"
           export FFLAGS="-fallow-argument-mismatch"
           mkdir -p objs/${PETSC_ARCH} bin/${PETSC_ARCH} lib/${PETSC_ARCH}
