@@ -196,3 +196,16 @@ jobs:
             /tmp/vDef.log
             /tmp/terzaghi.log
           retention-days: 7
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vDef-binaries-${{ github.run_number }}
+          path: |
+            bin/$PETSC_ARCH/vDef
+            bin/$PETSC_ARCH/vDefP
+            bin/$PETSC_ARCH/vDefUpa
+            bin/$PETSC_ARCH/vDefBT
+            bin/$PETSC_ARCH/vDefHF
+          retention-days: 7
