@@ -169,7 +169,7 @@ module m_vDefDefault
                                                          MEF90Scaling_CST,    & ! pressureScaling
                                                          1e-8_Kr,        & ! pressureATol
                                                          1e-4_Kr,        & ! pressureRTol
-                                                         100)             & ! pressureMaxIt
+                                                         100)             ! pressureMaxIt
    Type(MEF90FlowCellSetOptions_Type),Parameter   :: vDefFlowDefaultCellSetOptions = MEF90FlowCellSetOptions_Type( &
                                                          -1,              & ! elemTypeShortID (overridden)
                                                          0.0e0_Kr,          & ! source (volumetric injection/sink)
@@ -180,6 +180,6 @@ module m_vDefDefault
                                                          [0.0e0_Kr,0.0e0_Kr,0.0e0_Kr]) ! advectionVector (gravity)
    Type(MEF90FlowVertexSetOptions_Type),Parameter :: vDefFlowDefaultVertexSetOptions = MEF90FlowVertexSetOptions_Type( &
                                                          PETSC_FALSE,     & ! Has BC
-                                                         0.0e0_Kr)          & ! boundaryPressure
+                                                         0.0e0_Kr)          ! boundaryPressure
 
 end module m_vDefDefault
