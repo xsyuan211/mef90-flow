@@ -1,4 +1,4 @@
- #include "../MEF90/mef90.inc"
+#include "../MEF90/mef90.inc"
 Module m_MEF90_Flow
 #include "finclude/petscdef.h"
 #include "finclude/petsctsdef.h"
