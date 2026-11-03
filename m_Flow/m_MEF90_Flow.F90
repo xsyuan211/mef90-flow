@@ -1,4 +1,4 @@
-#include "../MEF90/mef90.inc"
+ #include "../MEF90/mef90.inc"
 Module m_MEF90_Flow
 #include "finclude/petscdef.h"
 #include "finclude/petsctsdef.h"
@@ -357,8 +357,8 @@ Contains
       Call SNESSetJacobian(SNESPressure,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT, &
            MEF90FlowBilinearForm,FlowCtx,ierr);CHKERRQ(ierr)
       Call SNESSetFunction(SNESPressure,residual,MEF90FlowOperator,FlowCtx,ierr);CHKERRQ(ierr)
-      Call SNESSetConvergence(SNESPressure,gOpt%pressureRTol,gOpt%pressureATol, &
-           -1.0_Kr,gOpt%pressureMaxIt,ierr);CHKERRQ(ierr)
+      Call SNESSetTolerances(SNESPressure,gOpt%pressureATol,gOpt%pressureRTol, &
+           -1.0_Kr,gOpt%pressureMaxIt,-1,ierr);CHKERRQ(ierr)
       Call PetscObjectSetName(SNESPressure,"SNESPressure",ierr);CHKERRQ(ierr)
    End Subroutine MEF90FlowCreateSNES
 
